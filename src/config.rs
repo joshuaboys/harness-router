@@ -104,8 +104,8 @@ pub fn load() -> Result<Registry> {
     if !path.exists() {
         return Ok(Registry::default());
     }
-    let text = std::fs::read_to_string(&path)
-        .with_context(|| format!("reading {}", path.display()))?;
+    let text =
+        std::fs::read_to_string(&path).with_context(|| format!("reading {}", path.display()))?;
     toml::from_str(&text).with_context(|| format!("parsing {}", path.display()))
 }
 

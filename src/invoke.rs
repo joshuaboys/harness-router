@@ -172,7 +172,11 @@ mod tests {
             None,
         );
         assert_eq!(inv.program, "claude");
-        assert!(has_env(&inv, "CLAUDE_CONFIG_DIR", "/data/claude/home/claude"));
+        assert!(has_env(
+            &inv,
+            "CLAUDE_CONFIG_DIR",
+            "/data/claude/home/claude"
+        ));
         assert!(inv.env_unset.iter().any(|k| k == "ANTHROPIC_API_KEY"));
         assert_eq!(inv.args, vec!["--continue".to_string()]);
         assert!(inv
@@ -188,7 +192,11 @@ mod tests {
         p.base_url = Some("https://glm.example/anthropic".to_string());
         let inv = resolve(ad, &p, Path::new("/d"), Some("sk-test"), &[], None);
         assert!(has_env(&inv, "ANTHROPIC_API_KEY", "sk-test"));
-        assert!(has_env(&inv, "ANTHROPIC_BASE_URL", "https://glm.example/anthropic"));
+        assert!(has_env(
+            &inv,
+            "ANTHROPIC_BASE_URL",
+            "https://glm.example/anthropic"
+        ));
         // Dir isolation still applies for API profiles.
         assert!(inv.env_set.iter().any(|(k, _)| k == "CLAUDE_CONFIG_DIR"));
         // API profiles must not clear the very key they depend on.
@@ -217,7 +225,10 @@ mod tests {
     fn explicit_key_env_overrides_adapter_default() {
         let ad = adapter::find("opencode").unwrap();
         let mut p = prof(Kind::Api);
-        p.key_env = vec!["ANTHROPIC_API_KEY".to_string(), "OPENAI_API_KEY".to_string()];
+        p.key_env = vec![
+            "ANTHROPIC_API_KEY".to_string(),
+            "OPENAI_API_KEY".to_string(),
+        ];
         let inv = resolve(ad, &p, Path::new("/d"), Some("k"), &[], None);
         assert!(has_env(&inv, "ANTHROPIC_API_KEY", "k"));
         assert!(has_env(&inv, "OPENAI_API_KEY", "k"));
@@ -227,7 +238,8 @@ mod tests {
     fn profile_env_is_applied_last() {
         let ad = adapter::find("grok").unwrap();
         let mut p = prof(Kind::Api);
-        p.env.insert("XAI_API_KEY".to_string(), "override".to_string());
+        p.env
+            .insert("XAI_API_KEY".to_string(), "override".to_string());
         let inv = resolve(ad, &p, Path::new("/d"), Some("from-secret"), &[], None);
         // adapter default sets XAI_API_KEY=from-secret first, profile env appends override last.
         let last = inv

@@ -69,7 +69,11 @@ pub const ADAPTERS: &[Adapter] = &[
         base_url_env: Some("ANTHROPIC_BASE_URL"),
         login_args: &[],
         // API key / tokens take precedence over OAuth in Claude Code, so clear them for OAuth profiles.
-        unset_for_oauth: &["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"],
+        unset_for_oauth: &[
+            "ANTHROPIC_API_KEY",
+            "ANTHROPIC_AUTH_TOKEN",
+            "CLAUDE_CODE_OAUTH_TOKEN",
+        ],
         experimental: false,
     },
     Adapter {
@@ -92,7 +96,10 @@ pub const ADAPTERS: &[Adapter] = &[
         aliases: &["oc"],
         about: "opencode (terminal AI coding agent)",
         // opencode follows XDG: auth lives at $XDG_DATA_HOME/opencode, config at $XDG_CONFIG_HOME/opencode.
-        env_dirs: &[("XDG_DATA_HOME", "xdg-data"), ("XDG_CONFIG_HOME", "xdg-config")],
+        env_dirs: &[
+            ("XDG_DATA_HOME", "xdg-data"),
+            ("XDG_CONFIG_HOME", "xdg-config"),
+        ],
         arg_dirs: &[],
         // Provider-specific; API profiles must declare the env var with --key-env.
         api_key_env: &[],
