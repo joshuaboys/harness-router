@@ -103,6 +103,21 @@ pub fn resolve(
     }
 }
 
+/// Resolve an *ambient* launch: run the real tool with no isolation and no credential changes.
+///
+/// This backs the reserved `default` profile — "the account that's already installed". harness-router
+/// deliberately touches nothing here (no config-dir redirect, no key, no unset), so the launch is
+/// indistinguishable from running the tool directly, just reachable through the same `hr` front-door.
+pub fn resolve_default(adapter: &Adapter, passthrough: &[String]) -> Invocation {
+    Invocation {
+        program: adapter.binary.to_string(),
+        args: passthrough.to_vec(),
+        env_set: Vec::new(),
+        env_unset: Vec::new(),
+        ensure_dirs: Vec::new(),
+    }
+}
+
 /// Create the isolated dirs, then replace the current process with the tool.
 ///
 /// On Unix this is a true `execvp`, so the tool inherits our TTY/signals directly and no wrapper
@@ -249,6 +264,18 @@ mod tests {
             .find(|(k, _)| k == "XAI_API_KEY")
             .unwrap();
         assert_eq!(last.1, "override");
+    }
+
+    #[test]
+    fn default_profile_is_pure_passthrough() {
+        let ad = adapter::find("claude").unwrap();
+        let inv = resolve_default(ad, &["--continue".to_string()]);
+        assert_eq!(inv.program, "claude");
+        assert_eq!(inv.args, vec!["--continue".to_string()]);
+        // The whole point of the default profile: change nothing about the environment.
+        assert!(inv.env_set.is_empty());
+        assert!(inv.env_unset.is_empty());
+        assert!(inv.ensure_dirs.is_empty());
     }
 
     #[test]

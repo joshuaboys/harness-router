@@ -7,59 +7,89 @@ use crate::cli::{AddArgs, ListArgs, LoginArgs, RemoveArgs};
 use crate::config::{self, Kind, Profile};
 use crate::invoke;
 
-/// `hr <tool> <profile> [args...]` — the headline command.
+/// `hr <tool> [profile] [args...]` — the headline command.
+///
+/// The profile is optional. Bare `hr <tool>` (or anything where the first extra token looks like a
+/// flag, e.g. `hr claude -p ...`) targets the reserved [`config::DEFAULT_PROFILE`] — your
+/// already-installed account, launched with no isolation.
 pub fn run(tokens: Vec<String>) -> Result<()> {
     let mut it = tokens.into_iter();
-    let tool = it.next().context("usage: hr <tool> <profile> [args...]")?;
+    let tool = it.next().context("usage: hr <tool> [profile] [args...]")?;
     let adapter = lookup(&tool)?;
 
-    let profile_name = match it.next() {
-        Some(name) => name,
-        None => {
-            let reg = config::load()?;
-            let available = reg.profile_names(adapter.name);
-            if available.is_empty() {
-                bail!(
-                    "no profiles for {0} yet. Add one:  hr add {0} <name>",
-                    adapter.name
-                );
-            }
-            bail!(
-                "which profile? usage: hr {} <profile>. Available: {}",
-                adapter.name,
-                available.join(", ")
-            );
-        }
+    // Decide what's a profile name vs. passthrough args. A leading `-token` (or no token at all)
+    // means "the default account, with these args" — so `hr claude -p ...` does the obvious thing.
+    let rest: Vec<String> = it.collect();
+    let first_is_flag = rest.first().is_some_and(|s| s.starts_with('-'));
+    let (profile_name, passthrough): (String, Vec<String>) = if rest.is_empty() || first_is_flag {
+        (config::DEFAULT_PROFILE.to_string(), rest)
+    } else {
+        let mut iter = rest.into_iter();
+        let name = iter.next().expect("non-empty");
+        (name, iter.collect())
     };
-    let passthrough: Vec<String> = it.collect();
 
     let reg = config::load()?;
-    let profile = reg
-        .get(adapter.name, &profile_name)
-        .cloned()
-        .with_context(|| {
-            format!(
-                "no profile '{1}' for {0}. Add it:  hr add {0} {1}",
-                adapter.name, profile_name
-            )
-        })?;
 
+    // A configured profile always wins — including one explicitly named `default`, which lets a
+    // power user repoint the bare command at an isolated account.
+    if let Some(profile) = reg.get(adapter.name, &profile_name).cloned() {
+        return run_profile(adapter, &profile_name, &profile, &passthrough);
+    }
+
+    // No configured profile under that name. The reserved `default` name falls back to an ambient
+    // passthrough; any other name is a genuine miss.
+    if profile_name == config::DEFAULT_PROFILE {
+        warn_if_experimental(adapter);
+        announce_default(adapter, &reg.profile_names(adapter.name));
+        let inv = invoke::resolve_default(adapter, &passthrough);
+        return invoke::exec(&inv);
+    }
+
+    bail!(
+        "no profile '{1}' for {0}. Add it:  hr add {0} {1}   (or just `hr {0}` for your default account)",
+        adapter.name,
+        profile_name
+    );
+}
+
+/// Launch a configured (OAuth/API) profile with full credential isolation.
+fn run_profile(
+    adapter: &Adapter,
+    profile_name: &str,
+    profile: &Profile,
+    passthrough: &[String],
+) -> Result<()> {
     let api_key = match profile.kind {
-        Kind::Api => Some(config::read_secret(adapter.name, &profile_name)?),
+        Kind::Api => Some(config::read_secret(adapter.name, profile_name)?),
         Kind::Oauth => None,
     };
-    let data_dir = config::profile_data_dir(adapter.name, &profile_name)?;
+    let data_dir = config::profile_data_dir(adapter.name, profile_name)?;
 
     warn_if_experimental(adapter);
     let inv = invoke::resolve(
         adapter,
-        &profile,
+        profile,
         &data_dir,
         api_key.as_deref(),
-        &passthrough,
+        passthrough,
         None,
     );
     invoke::exec(&inv)
+}
+
+/// When launching the implicit default *and* the user has named profiles, say so — otherwise it's
+/// easy to think you're on `work` when you're actually on the ambient account. Silent when there's
+/// no ambiguity (no other profiles configured).
+fn announce_default(adapter: &Adapter, named: &[String]) {
+    if named.is_empty() {
+        return;
+    }
+    eprintln!(
+        "hr: launching {}'s default (already-installed) account — no isolation. Named profiles: {}.",
+        adapter.name,
+        named.join(", ")
+    );
 }
 
 /// `hr add <tool> <profile> [--oauth|--api ...]`
@@ -83,9 +113,18 @@ pub fn add(args: AddArgs) -> Result<()> {
     };
 
     match kind {
-        Kind::Api => add_api(adapter, &args),
-        Kind::Oauth => add_oauth(adapter, &args.profile),
+        Kind::Api => add_api(adapter, &args)?,
+        Kind::Oauth => add_oauth(adapter, &args.profile)?,
     }
+
+    if args.profile == config::DEFAULT_PROFILE {
+        eprintln!(
+            "hr: note: '{0}/default' overrides the implicit default — `hr {0}` now launches this \
+             profile instead of your already-installed account.",
+            adapter.name
+        );
+    }
+    Ok(())
 }
 
 fn add_api(adapter: &Adapter, args: &AddArgs) -> Result<()> {
@@ -188,7 +227,9 @@ pub fn login(args: LoginArgs) -> Result<()> {
 pub fn list(args: ListArgs) -> Result<()> {
     let reg = config::load()?;
     if reg.is_empty() {
-        println!("No profiles yet. Add one, e.g.:  hr add claude work");
+        println!("No profiles yet.");
+        println!("`hr <tool>` already launches your default (already-installed) account.");
+        println!("Add isolated ones with, e.g.:  hr add claude work");
         return Ok(());
     }
 
@@ -220,6 +261,13 @@ pub fn list(args: ListArgs) -> Result<()> {
                 None => println!("  {name:<16} {kind}"),
             }
         }
+        // Unless the user redefined it, `hr <tool>` hits the ambient default — surface that here.
+        if !profiles.contains_key(config::DEFAULT_PROFILE) {
+            println!(
+                "  {:<16} ambient — your already-installed account",
+                config::DEFAULT_PROFILE
+            );
+        }
     }
     Ok(())
 }
@@ -240,6 +288,12 @@ pub fn tools() -> Result<()> {
         }
         println!();
     }
+    println!("Every tool also has an implicit `default` profile:");
+    println!("  hr <tool>            launch your already-installed account (no isolation)");
+    println!("  hr <tool> default    the same, named explicitly");
+    println!(
+        "Add an isolated account with `hr add <tool> <name>`; naming one `default` overrides this."
+    );
     Ok(())
 }
 
