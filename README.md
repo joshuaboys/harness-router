@@ -10,8 +10,8 @@ $ hr codex personal
 $ hr opencode oss
 ```
 
-No proxy. No daemon. No dashboard. Switching accounts for these tools is really just *"point the
-tool at the right credentials, then launch it"* — so that's all `hr` does. It sets the right
+No proxy. No daemon. No dashboard. Switching accounts for these tools is really just _"point the
+tool at the right credentials, then launch it"_ — so that's all `hr` does. It sets the right
 environment for the profile you named and `exec`s the real CLI, with any extra arguments passed
 straight through.
 
@@ -74,15 +74,14 @@ hr claude glm
 
 ## Commands
 
-| Command | What it does |
-| --- | --- |
-| `hr <tool> [profile] [args…]` | Launch `<tool>` on `<profile>`, forwarding `args…`. Omit the profile (or use `default`) to run your already-installed account with no isolation. |
-| `hr add <tool> <profile>` | Register a profile. `--oauth` or `--api` (with `--key`, `--base-url`, `--key-env`). |
-| `hr login <tool> <profile>` | Run the tool's own login flow inside an OAuth profile's isolated dir. |
-| `hr ls [tool]` | List configured tools and profiles. |
-| `hr which <tool> [profile]` | Explain which account a launch would use — binary, env, isolated dirs — without launching. The API key is redacted. |
-| `hr rm <tool> <profile> [--purge]` | Remove a profile (`--purge` also deletes its stored credentials). |
-| `hr tools` | Show the built-in tool adapters and how each isolates accounts. |
+| Command                            | What it does                                                                        |
+| ---------------------------------- | ----------------------------------------------------------------------------------- |
+| `hr <tool> <profile> [args…]`      | Launch `<tool>` on `<profile>`, forwarding `args…`.                                 |
+| `hr add <tool> <profile>`          | Register a profile. `--oauth` or `--api` (with `--key`, `--base-url`, `--key-env`). |
+| `hr login <tool> <profile>`        | Run the tool's own login flow inside an OAuth profile's isolated dir.               |
+| `hr ls [tool]`                     | List configured tools and profiles.                                                 |
+| `hr rm <tool> <profile> [--purge]` | Remove a profile (`--purge` also deletes its stored credentials).                   |
+| `hr tools`                         | Show the built-in tool adapters and how each isolates accounts.                     |
 
 `--key -` reads the API key from stdin (so it never lands in your shell history):
 
@@ -92,13 +91,13 @@ echo "$MY_KEY" | hr add grok work --api --key -
 
 ## Supported tools
 
-| Tool | Account isolation |
-| --- | --- |
-| **claude** (Claude Code) | `CLAUDE_CONFIG_DIR` per profile; API profiles set `ANTHROPIC_API_KEY` (+ `ANTHROPIC_BASE_URL`). OAuth profiles clear stray `ANTHROPIC_API_KEY`/`*_AUTH_TOKEN` so the login wins. |
-| **codex** (OpenAI Codex CLI) | `CODEX_HOME` per profile (relocates auth, config, sessions and logs). |
-| **opencode** | `XDG_DATA_HOME` + `XDG_CONFIG_HOME` per profile. API profiles require `--key-env` (provider-specific). |
-| **grok** (xAI) | API-key based: `XAI_API_KEY` / `GROK_API_KEY`. |
-| **antigravity** (Google Antigravity, Gemini's successor) | **Experimental.** Isolates via a `--user-data-dir` launch arg; not yet verified on a real install. |
+| Tool                                                     | Account isolation                                                                                                                                                                |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **claude** (Claude Code)                                 | `CLAUDE_CONFIG_DIR` per profile; API profiles set `ANTHROPIC_API_KEY` (+ `ANTHROPIC_BASE_URL`). OAuth profiles clear stray `ANTHROPIC_API_KEY`/`*_AUTH_TOKEN` so the login wins. |
+| **codex** (OpenAI Codex CLI)                             | `CODEX_HOME` per profile (relocates auth, config, sessions and logs).                                                                                                            |
+| **opencode**                                             | `XDG_DATA_HOME` + `XDG_CONFIG_HOME` per profile. API profiles require `--key-env` (provider-specific).                                                                           |
+| **grok** (xAI)                                           | API-key based: `XAI_API_KEY` / `GROK_API_KEY`.                                                                                                                                   |
+| **antigravity** (Google Antigravity, Gemini's successor) | **Experimental.** Isolates via a `--user-data-dir` launch arg; not yet verified on a real install.                                                                               |
 
 Adding a tool is a single entry in [`src/adapter.rs`](src/adapter.rs).
 
@@ -124,7 +123,7 @@ Secrets are never written to the registry.
 
 - **macOS + Claude OAuth.** Claude Code stores OAuth credentials in the macOS Keychain, which
   `CLAUDE_CONFIG_DIR` does not relocate. OAuth-profile isolation for `claude` is therefore reliable
-  on Linux; on macOS, *API* profiles work everywhere, but separating two OAuth logins needs a
+  on Linux; on macOS, _API_ profiles work everywhere, but separating two OAuth logins needs a
   Keychain-aware workaround (tracked for a future release). Codex/opencode are unaffected.
 - **Antigravity** is experimental — see the table above.
 
