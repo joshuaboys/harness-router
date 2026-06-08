@@ -61,6 +61,7 @@ hr add claude work --oauth
 # 2. Log in to each (runs the tool's own login inside that profile's isolated config)
 hr login claude home
 hr login claude work
+hr login codex home --device-auth            # flags after the profile pass to the login flow
 
 # 3. Use them — or skip all of the above and use your existing login:
 hr claude                                    # your default, already-installed account
@@ -78,7 +79,7 @@ hr claude glm
 | ---------------------------------- | ----------------------------------------------------------------------------------- |
 | `hr <tool> <profile> [args…]`      | Launch `<tool>` on `<profile>`, forwarding `args…`.                                 |
 | `hr add <tool> <profile>`          | Register a profile. `--oauth` or `--api` (with `--key`, `--base-url`, `--key-env`). |
-| `hr login <tool> <profile>`        | Run the tool's own login flow inside an OAuth profile's isolated dir.               |
+| `hr login <tool> <profile> [args…]` | Run the tool's own login flow inside an OAuth profile's isolated dir; `args…` forward to it (e.g. `--device-auth`). |
 | `hr ls [tool]`                     | List configured tools and profiles.                                                 |
 | `hr rm <tool> <profile> [--purge]` | Remove a profile (`--purge` also deletes its stored credentials).                   |
 | `hr tools`                         | Show the built-in tool adapters and how each isolates accounts.                     |
