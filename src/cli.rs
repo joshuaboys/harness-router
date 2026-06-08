@@ -8,6 +8,7 @@ use clap::{Args, Parser, Subcommand};
 
 const AFTER_HELP: &str = "\
 EXAMPLES:
+  hr claude                          launch your default (already-installed) account
   hr add claude home                 register an OAuth profile (then log in)
   hr login claude home               run Claude's login into the 'home' profile
   hr claude home                     launch Claude on the 'home' account
@@ -16,6 +17,7 @@ EXAMPLES:
       --base-url https://open.bigmodel.cn/api/anthropic
   hr add opencode work --api --key-env ANTHROPIC_API_KEY
   hr ls                              list profiles
+  hr rm claude home --purge          remove a profile and delete its stored data
   hr tools                           show built-in tool adapters";
 
 #[derive(Parser)]
@@ -45,7 +47,8 @@ pub enum Command {
     Login(LoginArgs),
     /// Show the built-in tool adapters and how each isolates accounts
     Tools,
-    /// `hr <tool> <profile> [args...]` — launch a tool with the given profile
+    /// `hr <tool> [profile] [args...]` — launch a tool. Omit the profile (or use `default`) to use
+    /// your already-installed account with no isolation.
     #[command(external_subcommand)]
     Run(Vec<String>),
 }

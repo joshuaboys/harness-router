@@ -3,6 +3,7 @@
 Add multiple OAuth/API accounts for your AI coding CLIs and switch between them with one command:
 
 ```console
+$ hr claude               # your default, already-installed account (no setup)
 $ hr claude work          # launch Claude Code on your "work" account
 $ hr claude home          # …or your "home" account, in another terminal, at the same time
 $ hr codex personal
@@ -26,6 +27,12 @@ redirect per-launch. A **profile** is just one of two things:
 - **API profile** — a set of environment variables (an API key, optionally a custom base URL). No
   login step. This also covers any Anthropic-/OpenAI-compatible endpoint (GLM, OpenRouter, Ollama,
   Kimi, …) by pointing the base URL at it.
+
+The account that's **already installed** needs no profile at all: a bare `hr <tool>` (equivalently
+`hr <tool> default`) launches the tool with your existing login and *no* isolation — so you get one
+consistent front-door for every account, the default included. A leading flag is treated the same
+way, so `hr claude -p "…"` just runs your default account with those args. Register a profile named
+`default` to repoint the bare command at an isolated account instead.
 
 Switching is **ephemeral**: `hr claude work` affects only the process it launches. There is no
 global "current account" to get out of sync — the account is chosen fresh, per command.
@@ -53,7 +60,8 @@ hr add claude work --oauth
 hr login claude home
 hr login claude work
 
-# 3. Use them
+# 3. Use them — or skip all of the above and use your existing login:
+hr claude                                    # your default, already-installed account
 hr claude home
 hr claude work -p "summarise CHANGES.md"     # extra args go straight to claude
 
@@ -66,7 +74,7 @@ hr claude glm
 
 | Command | What it does |
 | --- | --- |
-| `hr <tool> <profile> [args…]` | Launch `<tool>` on `<profile>`, forwarding `args…`. |
+| `hr <tool> [profile] [args…]` | Launch `<tool>` on `<profile>`, forwarding `args…`. Omit the profile (or use `default`) to run your already-installed account with no isolation. |
 | `hr add <tool> <profile>` | Register a profile. `--oauth` or `--api` (with `--key`, `--base-url`, `--key-env`). |
 | `hr login <tool> <profile>` | Run the tool's own login flow inside an OAuth profile's isolated dir. |
 | `hr ls [tool]` | List configured tools and profiles. |

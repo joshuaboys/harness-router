@@ -13,6 +13,10 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
+/// Reserved profile name meaning "the account that's already installed": launch the tool with no
+/// isolation and no credential changes. Adding a real profile under this name overrides it.
+pub const DEFAULT_PROFILE: &str = "default";
+
 /// Whether a profile authenticates via an isolated OAuth login or a stored API key.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
