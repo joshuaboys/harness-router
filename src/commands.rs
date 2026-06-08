@@ -1,0 +1,323 @@
+//! Implementations of each subcommand.
+
+use anyhow::{bail, Context, Result};
+
+use crate::adapter::{self, Adapter};
+use crate::cli::{AddArgs, ListArgs, LoginArgs, RemoveArgs};
+use crate::config::{self, Kind, Profile};
+use crate::invoke;
+
+/// `hr <tool> <profile> [args...]` — the headline command.
+pub fn run(tokens: Vec<String>) -> Result<()> {
+    let mut it = tokens.into_iter();
+    let tool = it.next().context("usage: hr <tool> <profile> [args...]")?;
+    let adapter = lookup(&tool)?;
+
+    let profile_name = match it.next() {
+        Some(name) => name,
+        None => {
+            let reg = config::load()?;
+            let available = reg.profile_names(adapter.name);
+            if available.is_empty() {
+                bail!(
+                    "no profiles for {0} yet. Add one:  hr add {0} <name>",
+                    adapter.name
+                );
+            }
+            bail!(
+                "which profile? usage: hr {} <profile>. Available: {}",
+                adapter.name,
+                available.join(", ")
+            );
+        }
+    };
+    let passthrough: Vec<String> = it.collect();
+
+    let reg = config::load()?;
+    let profile = reg.get(adapter.name, &profile_name).cloned().with_context(|| {
+        format!(
+            "no profile '{1}' for {0}. Add it:  hr add {0} {1}",
+            adapter.name, profile_name
+        )
+    })?;
+
+    let api_key = match profile.kind {
+        Kind::Api => Some(config::read_secret(adapter.name, &profile_name)?),
+        Kind::Oauth => None,
+    };
+    let data_dir = config::profile_data_dir(adapter.name, &profile_name)?;
+
+    warn_if_experimental(adapter);
+    let inv = invoke::resolve(
+        adapter,
+        &profile,
+        &data_dir,
+        api_key.as_deref(),
+        &passthrough,
+        None,
+    );
+    invoke::exec(&inv)
+}
+
+/// `hr add <tool> <profile> [--oauth|--api ...]`
+pub fn add(args: AddArgs) -> Result<()> {
+    let adapter = lookup(&args.tool)?;
+    if !valid_name(&args.profile) {
+        bail!(
+            "invalid profile name '{}': use letters, digits, '-' or '_'",
+            args.profile
+        );
+    }
+
+    let wants_api =
+        args.api || args.key.is_some() || args.base_url.is_some() || !args.key_env.is_empty();
+    let kind = if wants_api {
+        Kind::Api
+    } else if args.oauth {
+        Kind::Oauth
+    } else {
+        prompt_kind()?
+    };
+
+    match kind {
+        Kind::Api => add_api(adapter, &args),
+        Kind::Oauth => add_oauth(adapter, &args.profile),
+    }
+}
+
+fn add_api(adapter: &Adapter, args: &AddArgs) -> Result<()> {
+    // Determine which env vars the key will be exported as.
+    let effective_key_env: Vec<String> = if args.key_env.is_empty() {
+        adapter.api_key_env.iter().map(|s| s.to_string()).collect()
+    } else {
+        args.key_env.clone()
+    };
+    if effective_key_env.is_empty() {
+        bail!(
+            "{0} API profiles need an explicit key env var: pass --key-env VAR \
+             (e.g. hr add {0} {1} --api --key-env ANTHROPIC_API_KEY)",
+            adapter.name,
+            args.profile
+        );
+    }
+    if args.base_url.is_some() && adapter.base_url_env.is_none() {
+        eprintln!(
+            "hr: warning: {} has no known base-url env var; --base-url won't be applied automatically.",
+            adapter.name
+        );
+    }
+
+    let key = read_api_key(args, adapter)?;
+    if key.trim().is_empty() {
+        bail!("empty API key — nothing stored");
+    }
+    config::write_secret(adapter.name, &args.profile, key.trim())?;
+
+    let profile = Profile {
+        kind: Kind::Api,
+        base_url: args.base_url.clone(),
+        // Only persist key_env if the user overrode the adapter default.
+        key_env: args.key_env.clone(),
+        env: Default::default(),
+    };
+    let mut reg = config::load()?;
+    reg.insert(adapter.name, &args.profile, profile);
+    config::save(&reg)?;
+
+    println!("Added API profile {}/{}.", adapter.name, args.profile);
+    println!("Launch it:  hr {} {}", adapter.name, args.profile);
+    Ok(())
+}
+
+fn add_oauth(adapter: &Adapter, profile: &str) -> Result<()> {
+    let new = Profile {
+        kind: Kind::Oauth,
+        base_url: None,
+        key_env: Vec::new(),
+        env: Default::default(),
+    };
+    let mut reg = config::load()?;
+    reg.insert(adapter.name, profile, new);
+    config::save(&reg)?;
+
+    println!("Added OAuth profile {}/{}.", adapter.name, profile);
+    if adapter.login_args.is_empty() {
+        println!(
+            "Log in:     hr {0} {1}   (complete {0}'s normal login the first time)",
+            adapter.name, profile
+        );
+    } else {
+        println!("Log in:     hr login {} {}", adapter.name, profile);
+    }
+    Ok(())
+}
+
+/// `hr login <tool> <profile>` — run the tool's own auth flow inside the profile's isolated dir.
+pub fn login(args: LoginArgs) -> Result<()> {
+    let adapter = lookup(&args.tool)?;
+    let reg = config::load()?;
+    let profile = reg.get(adapter.name, &args.profile).cloned().with_context(|| {
+        format!(
+            "no profile '{1}' for {0}. Add it:  hr add {0} {1} --oauth",
+            adapter.name, args.profile
+        )
+    })?;
+    if profile.kind != Kind::Oauth {
+        bail!(
+            "'{}/{}' is an API profile — no login flow is needed.",
+            adapter.name,
+            args.profile
+        );
+    }
+
+    let data_dir = config::profile_data_dir(adapter.name, &args.profile)?;
+    let login_args: Vec<String> = adapter.login_args.iter().map(|s| s.to_string()).collect();
+
+    warn_if_experimental(adapter);
+    let inv = invoke::resolve(adapter, &profile, &data_dir, None, &[], Some(&login_args));
+    invoke::exec(&inv)
+}
+
+/// `hr ls [tool]`
+pub fn list(args: ListArgs) -> Result<()> {
+    let reg = config::load()?;
+    if reg.is_empty() {
+        println!("No profiles yet. Add one, e.g.:  hr add claude work");
+        return Ok(());
+    }
+
+    let filter = args
+        .tool
+        .as_deref()
+        .map(|t| adapter::find(t).map(|a| a.name.to_string()).unwrap_or_else(|| t.to_string()));
+
+    for (tool, profiles) in reg.tools() {
+        if let Some(want) = &filter {
+            if tool != want {
+                continue;
+            }
+        }
+        let about = adapter::find(tool).map(|a| a.about).unwrap_or("");
+        if about.is_empty() {
+            println!("{tool}");
+        } else {
+            println!("{tool}  ({about})");
+        }
+        for (name, profile) in profiles {
+            let kind = match profile.kind {
+                Kind::Oauth => "oauth",
+                Kind::Api => "api",
+            };
+            match &profile.base_url {
+                Some(url) => println!("  {name:<16} {kind:<6} -> {url}"),
+                None => println!("  {name:<16} {kind}"),
+            }
+        }
+    }
+    Ok(())
+}
+
+/// `hr tools`
+pub fn tools() -> Result<()> {
+    println!("Built-in tool adapters:\n");
+    for ad in adapter::ADAPTERS {
+        let tag = if ad.experimental { "  [experimental]" } else { "" };
+        println!("  {:<13}{}{}", ad.name, ad.about, tag);
+        println!("  {:<13}isolation: {}", "", ad.isolation_summary());
+        if !ad.aliases.is_empty() {
+            println!("  {:<13}aliases:   {}", "", ad.aliases.join(", "));
+        }
+        println!();
+    }
+    Ok(())
+}
+
+/// `hr rm <tool> <profile> [--purge]`
+pub fn remove(args: RemoveArgs) -> Result<()> {
+    // Accept aliases, but fall back to the raw name so you can always clean up stale entries.
+    let key = adapter::find(&args.tool)
+        .map(|a| a.name.to_string())
+        .unwrap_or_else(|| args.tool.clone());
+
+    let mut reg = config::load()?;
+    if reg.remove(&key, &args.profile).is_none() {
+        bail!("no profile '{}' for '{}'", args.profile, key);
+    }
+    config::save(&reg)?;
+    println!("Removed {}/{} from the registry.", key, args.profile);
+
+    let dir = config::profile_data_dir(&key, &args.profile)?;
+    if args.purge {
+        if dir.exists() {
+            std::fs::remove_dir_all(&dir)
+                .with_context(|| format!("removing {}", dir.display()))?;
+            println!("Purged {}.", dir.display());
+        }
+    } else if dir.exists() {
+        println!(
+            "Stored credentials/data remain at {} (use --purge to delete).",
+            dir.display()
+        );
+    }
+    Ok(())
+}
+
+fn lookup(tool: &str) -> Result<&'static Adapter> {
+    adapter::find(tool).with_context(|| {
+        format!(
+            "unknown tool '{}'. Built-ins: {}. See `hr tools`.",
+            tool,
+            adapter::names()
+        )
+    })
+}
+
+fn warn_if_experimental(adapter: &Adapter) {
+    if adapter.experimental {
+        eprintln!(
+            "hr: note: '{}' support is experimental — verify account isolation works before relying on it.",
+            adapter.name
+        );
+    }
+}
+
+fn read_api_key(args: &AddArgs, adapter: &Adapter) -> Result<String> {
+    match args.key.as_deref() {
+        Some("-") => {
+            use std::io::Read;
+            let mut s = String::new();
+            std::io::stdin()
+                .read_to_string(&mut s)
+                .context("reading API key from stdin")?;
+            Ok(s)
+        }
+        Some(k) => Ok(k.to_string()),
+        None => rpassword::prompt_password(format!(
+            "API key for {}/{}: ",
+            adapter.name, args.profile
+        ))
+        .context("reading API key"),
+    }
+}
+
+fn prompt_kind() -> Result<Kind> {
+    use std::io::Write;
+    print!("Profile type — [o]auth login or [a]pi key? [o] ");
+    std::io::stdout().flush().ok();
+    let mut line = String::new();
+    std::io::stdin()
+        .read_line(&mut line)
+        .context("reading input")?;
+    match line.trim().to_ascii_lowercase().as_str() {
+        "" | "o" | "oauth" => Ok(Kind::Oauth),
+        "a" | "api" => Ok(Kind::Api),
+        other => bail!("unrecognized choice '{other}' (expected 'o' or 'a')"),
+    }
+}
+
+fn valid_name(name: &str) -> bool {
+    !name.is_empty()
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+}
