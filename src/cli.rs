@@ -17,6 +17,7 @@ EXAMPLES:
       --base-url https://open.bigmodel.cn/api/anthropic
   hr add opencode work --api --key-env ANTHROPIC_API_KEY
   hr ls                              list profiles
+  hr which claude work               show which account a launch would use
   hr rm claude home --purge          remove a profile and delete its stored data
   hr tools                           show built-in tool adapters";
 
@@ -43,6 +44,8 @@ pub enum Command {
     /// List configured tools and profiles
     #[command(visible_alias = "ls")]
     List(ListArgs),
+    /// Show which account a launch would use (binary, env, dirs) — without launching
+    Which(WhichArgs),
     /// Run a tool's own login/auth flow for an OAuth profile
     Login(LoginArgs),
     /// Show the built-in tool adapters and how each isolates accounts
@@ -89,6 +92,13 @@ pub struct RemoveArgs {
 pub struct ListArgs {
     /// Only show profiles for this tool
     pub tool: Option<String>,
+}
+
+#[derive(Args)]
+pub struct WhichArgs {
+    pub tool: String,
+    /// Profile name; omit (or use `default`) for your already-installed account
+    pub profile: Option<String>,
 }
 
 #[derive(Args)]

@@ -18,6 +18,7 @@ fn main() {
         Command::Add(args) => commands::add(args),
         Command::Remove(args) => commands::remove(args),
         Command::List(args) => commands::list(args),
+        Command::Which(args) => commands::which(args),
         Command::Login(args) => commands::login(args),
         Command::Tools => commands::tools(),
         Command::Run(tokens) => commands::run(tokens),

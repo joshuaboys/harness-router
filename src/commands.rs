@@ -3,9 +3,13 @@
 use anyhow::{bail, Context, Result};
 
 use crate::adapter::{self, Adapter};
-use crate::cli::{AddArgs, ListArgs, LoginArgs, RemoveArgs};
+use crate::cli::{AddArgs, ListArgs, LoginArgs, RemoveArgs, WhichArgs};
 use crate::config::{self, Kind, Profile};
-use crate::invoke;
+use crate::invoke::{self, Invocation};
+
+/// Placeholder substituted for the real API key when *describing* a launch (`hr which`), so the
+/// secret is never read from disk or printed.
+const REDACTED_KEY: &str = "<hidden>";
 
 /// `hr <tool> [profile] [args...]` — the headline command.
 ///
@@ -281,6 +285,89 @@ pub fn list(args: ListArgs) -> Result<()> {
     Ok(())
 }
 
+/// `hr which <tool> [profile]` — describe which account a launch would use, without launching.
+pub fn which(args: WhichArgs) -> Result<()> {
+    let adapter = lookup(&args.tool)?;
+    let profile_name = args
+        .profile
+        .unwrap_or_else(|| config::DEFAULT_PROFILE.to_string());
+    let reg = config::load()?;
+
+    // A configured profile resolves exactly as `run` would — but with a redacted key.
+    if let Some(profile) = reg.get(adapter.name, &profile_name).cloned() {
+        let api_key = match profile.kind {
+            Kind::Api => Some(REDACTED_KEY),
+            Kind::Oauth => None,
+        };
+        let data_dir = config::profile_data_dir(adapter.name, &profile_name)?;
+        let inv = invoke::resolve(adapter, &profile, &data_dir, api_key, &[], None);
+        let kind = match profile.kind {
+            Kind::Oauth => "oauth",
+            Kind::Api => "api",
+        };
+        print!(
+            "{}",
+            format_plan(&format!("{}/{}", adapter.name, profile_name), kind, &inv)
+        );
+        if profile.kind == Kind::Api && !config::secret_path(adapter.name, &profile_name)?.exists()
+        {
+            println!(
+                "  note:    no stored API key — re-add it with `hr add {} {} --api`",
+                adapter.name, profile_name
+            );
+        }
+        return Ok(());
+    }
+
+    // The reserved `default` name describes an ambient (no-isolation) launch.
+    if profile_name == config::DEFAULT_PROFILE {
+        let inv = invoke::resolve_default(adapter, &[]);
+        print!(
+            "{}",
+            format_plan(
+                &format!("{}/default", adapter.name),
+                "ambient — your already-installed account",
+                &inv,
+            )
+        );
+        return Ok(());
+    }
+
+    bail!(
+        "no profile '{1}' for {0}. Add it:  hr add {0} {1}   (or `hr which {0}` for your default account)",
+        adapter.name,
+        profile_name
+    );
+}
+
+/// Render a launch plan as human-readable text. Pure, so it's unit-testable and the `which` command
+/// stays a thin wrapper. The API key is expected to be already redacted by the caller.
+fn format_plan(label: &str, kind: &str, inv: &Invocation) -> String {
+    use std::fmt::Write;
+    let mut out = String::new();
+    let _ = writeln!(out, "{label}  ({kind})");
+    let _ = writeln!(out, "  {:<8} {}", "binary:", inv.program);
+
+    if inv.env_set.is_empty() && inv.env_unset.is_empty() && inv.args.is_empty() {
+        let _ = writeln!(
+            out,
+            "  (no isolation — launches with your current environment)"
+        );
+        return out;
+    }
+    for (i, (k, v)) in inv.env_set.iter().enumerate() {
+        let lead = if i == 0 { "env:" } else { "" };
+        let _ = writeln!(out, "  {lead:<8} {k}={v}");
+    }
+    if !inv.env_unset.is_empty() {
+        let _ = writeln!(out, "  {:<8} {}", "unset:", inv.env_unset.join(", "));
+    }
+    if !inv.args.is_empty() {
+        let _ = writeln!(out, "  {:<8} {}", "args:", inv.args.join(" "));
+    }
+    out
+}
+
 /// `hr tools`
 pub fn tools() -> Result<()> {
     println!("Built-in tool adapters:\n");
@@ -397,6 +484,8 @@ fn valid_name(name: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
+    use std::path::Path;
 
     /// Helper: parse the post-tool tokens the way `run` does.
     fn split(tokens: &[&str]) -> (String, Vec<String>) {
@@ -445,5 +534,34 @@ mod tests {
         let (profile, args) = split(&["--", "raw"]);
         assert_eq!(profile, config::DEFAULT_PROFILE);
         assert_eq!(args, vec!["--", "raw"]);
+    }
+
+    #[test]
+    fn which_describes_ambient_default_as_no_isolation() {
+        let ad = adapter::find("claude").unwrap();
+        let inv = invoke::resolve_default(ad, &[]);
+        let out = format_plan("claude/default", "ambient", &inv);
+        assert!(out.contains("claude/default  (ambient)"));
+        assert!(out.contains("binary:  claude"));
+        assert!(out.contains("no isolation"));
+    }
+
+    #[test]
+    fn which_redacts_the_api_key_but_shows_everything_else() {
+        let ad = adapter::find("claude").unwrap();
+        let profile = Profile {
+            kind: Kind::Api,
+            base_url: Some("https://glm.example/anthropic".to_string()),
+            key_env: Vec::new(),
+            env: BTreeMap::new(),
+        };
+        // `which` resolves with the placeholder — the real secret is never in play.
+        let inv = invoke::resolve(ad, &profile, Path::new("/d"), Some(REDACTED_KEY), &[], None);
+        let out = format_plan("claude/glm", "api", &inv);
+
+        assert!(out.contains(&format!("ANTHROPIC_API_KEY={REDACTED_KEY}")));
+        assert!(!out.contains("sk-")); // no real-looking key ever rendered
+        assert!(out.contains("ANTHROPIC_BASE_URL=https://glm.example/anthropic"));
+        assert!(out.contains("CLAUDE_CONFIG_DIR=")); // dir isolation still surfaced
     }
 }

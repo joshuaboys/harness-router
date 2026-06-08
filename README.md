@@ -32,7 +32,9 @@ The account that's **already installed** needs no profile at all: a bare `hr <to
 `hr <tool> default`) launches the tool with your existing login and *no* isolation — so you get one
 consistent front-door for every account, the default included. A leading flag is treated the same
 way, so `hr claude -p "…"` just runs your default account with those args. Register a profile named
-`default` to repoint the bare command at an isolated account instead.
+`default` to repoint the bare command at an isolated account instead. Not sure which account a
+command would land on? `hr which <tool> [profile]` prints exactly that — binary, env and isolated
+dirs — without launching anything (the API key is redacted).
 
 Switching is **ephemeral**: `hr claude work` affects only the process it launches. There is no
 global "current account" to get out of sync — the account is chosen fresh, per command.
@@ -78,6 +80,7 @@ hr claude glm
 | `hr add <tool> <profile>` | Register a profile. `--oauth` or `--api` (with `--key`, `--base-url`, `--key-env`). |
 | `hr login <tool> <profile>` | Run the tool's own login flow inside an OAuth profile's isolated dir. |
 | `hr ls [tool]` | List configured tools and profiles. |
+| `hr which <tool> [profile]` | Explain which account a launch would use — binary, env, isolated dirs — without launching. The API key is redacted. |
 | `hr rm <tool> <profile> [--purge]` | Remove a profile (`--purge` also deletes its stored credentials). |
 | `hr tools` | Show the built-in tool adapters and how each isolates accounts. |
 
