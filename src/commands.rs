@@ -34,12 +34,15 @@ pub fn run(tokens: Vec<String>) -> Result<()> {
     let passthrough: Vec<String> = it.collect();
 
     let reg = config::load()?;
-    let profile = reg.get(adapter.name, &profile_name).cloned().with_context(|| {
-        format!(
-            "no profile '{1}' for {0}. Add it:  hr add {0} {1}",
-            adapter.name, profile_name
-        )
-    })?;
+    let profile = reg
+        .get(adapter.name, &profile_name)
+        .cloned()
+        .with_context(|| {
+            format!(
+                "no profile '{1}' for {0}. Add it:  hr add {0} {1}",
+                adapter.name, profile_name
+            )
+        })?;
 
     let api_key = match profile.kind {
         Kind::Api => Some(config::read_secret(adapter.name, &profile_name)?),
@@ -156,12 +159,15 @@ fn add_oauth(adapter: &Adapter, profile: &str) -> Result<()> {
 pub fn login(args: LoginArgs) -> Result<()> {
     let adapter = lookup(&args.tool)?;
     let reg = config::load()?;
-    let profile = reg.get(adapter.name, &args.profile).cloned().with_context(|| {
-        format!(
-            "no profile '{1}' for {0}. Add it:  hr add {0} {1} --oauth",
-            adapter.name, args.profile
-        )
-    })?;
+    let profile = reg
+        .get(adapter.name, &args.profile)
+        .cloned()
+        .with_context(|| {
+            format!(
+                "no profile '{1}' for {0}. Add it:  hr add {0} {1} --oauth",
+                adapter.name, args.profile
+            )
+        })?;
     if profile.kind != Kind::Oauth {
         bail!(
             "'{}/{}' is an API profile — no login flow is needed.",
@@ -186,10 +192,11 @@ pub fn list(args: ListArgs) -> Result<()> {
         return Ok(());
     }
 
-    let filter = args
-        .tool
-        .as_deref()
-        .map(|t| adapter::find(t).map(|a| a.name.to_string()).unwrap_or_else(|| t.to_string()));
+    let filter = args.tool.as_deref().map(|t| {
+        adapter::find(t)
+            .map(|a| a.name.to_string())
+            .unwrap_or_else(|| t.to_string())
+    });
 
     for (tool, profiles) in reg.tools() {
         if let Some(want) = &filter {
@@ -221,7 +228,11 @@ pub fn list(args: ListArgs) -> Result<()> {
 pub fn tools() -> Result<()> {
     println!("Built-in tool adapters:\n");
     for ad in adapter::ADAPTERS {
-        let tag = if ad.experimental { "  [experimental]" } else { "" };
+        let tag = if ad.experimental {
+            "  [experimental]"
+        } else {
+            ""
+        };
         println!("  {:<13}{}{}", ad.name, ad.about, tag);
         println!("  {:<13}isolation: {}", "", ad.isolation_summary());
         if !ad.aliases.is_empty() {
@@ -249,8 +260,7 @@ pub fn remove(args: RemoveArgs) -> Result<()> {
     let dir = config::profile_data_dir(&key, &args.profile)?;
     if args.purge {
         if dir.exists() {
-            std::fs::remove_dir_all(&dir)
-                .with_context(|| format!("removing {}", dir.display()))?;
+            std::fs::remove_dir_all(&dir).with_context(|| format!("removing {}", dir.display()))?;
             println!("Purged {}.", dir.display());
         }
     } else if dir.exists() {
@@ -292,11 +302,10 @@ fn read_api_key(args: &AddArgs, adapter: &Adapter) -> Result<String> {
             Ok(s)
         }
         Some(k) => Ok(k.to_string()),
-        None => rpassword::prompt_password(format!(
-            "API key for {}/{}: ",
-            adapter.name, args.profile
-        ))
-        .context("reading API key"),
+        None => {
+            rpassword::prompt_password(format!("API key for {}/{}: ", adapter.name, args.profile))
+                .context("reading API key")
+        }
     }
 }
 
