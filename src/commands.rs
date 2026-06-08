@@ -229,7 +229,7 @@ pub fn login(args: LoginArgs) -> Result<()> {
     }
 
     let data_dir = config::profile_data_dir(adapter.name, &args.profile)?;
-    let login_args: Vec<String> = adapter.login_args.iter().map(|s| s.to_string()).collect();
+    let login_args = compose_login_args(adapter.login_args, &args.extra);
 
     warn_if_experimental(adapter);
     let inv = invoke::resolve(adapter, &profile, &data_dir, None, &[], Some(&login_args));
@@ -474,6 +474,17 @@ fn prompt_kind() -> Result<Kind> {
     }
 }
 
+/// Compose the args for a tool's login flow: the adapter's own login subcommand followed by any
+/// extras the user passed (e.g. `--device-auth` on a headless box). Pure, so it's unit-testable and
+/// the forwarding contract stays pinned.
+fn compose_login_args(login_args: &[&str], extra: &[String]) -> Vec<String> {
+    login_args
+        .iter()
+        .map(|s| s.to_string())
+        .chain(extra.iter().cloned())
+        .collect()
+}
+
 fn valid_name(name: &str) -> bool {
     !name.is_empty()
         && name
@@ -534,6 +545,33 @@ mod tests {
         let (profile, args) = split(&["--", "raw"]);
         assert_eq!(profile, config::DEFAULT_PROFILE);
         assert_eq!(args, vec!["--", "raw"]);
+    }
+
+    #[test]
+    fn login_forwards_extra_args_after_the_adapters_subcommand() {
+        // `hr login codex home --device-auth` -> `codex login --device-auth`.
+        let ad = adapter::find("codex").unwrap();
+        let extra = vec!["--device-auth".to_string()];
+        let args = compose_login_args(ad.login_args, &extra);
+        assert_eq!(args, vec!["login", "--device-auth"]);
+
+        // And those args land in the resolved invocation, alongside dir isolation.
+        let profile = Profile {
+            kind: Kind::Oauth,
+            base_url: None,
+            key_env: Vec::new(),
+            env: BTreeMap::new(),
+        };
+        let inv = invoke::resolve(ad, &profile, Path::new("/d"), None, &[], Some(&args));
+        assert_eq!(inv.args, vec!["login", "--device-auth"]);
+        assert!(inv.env_set.iter().any(|(k, _)| k == "CODEX_HOME"));
+    }
+
+    #[test]
+    fn login_with_no_extras_is_just_the_adapter_subcommand() {
+        let ad = adapter::find("opencode").unwrap();
+        let args = compose_login_args(ad.login_args, &[]);
+        assert_eq!(args, vec!["auth", "login"]);
     }
 
     #[test]
