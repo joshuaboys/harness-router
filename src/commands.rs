@@ -17,17 +17,9 @@ pub fn run(tokens: Vec<String>) -> Result<()> {
     let tool = it.next().context("usage: hr <tool> [profile] [args...]")?;
     let adapter = lookup(&tool)?;
 
-    // Decide what's a profile name vs. passthrough args. A leading `-token` (or no token at all)
-    // means "the default account, with these args" — so `hr claude -p ...` does the obvious thing.
+    // Decide what's a profile name vs. passthrough args (see `split_profile_args`).
     let rest: Vec<String> = it.collect();
-    let first_is_flag = rest.first().is_some_and(|s| s.starts_with('-'));
-    let (profile_name, passthrough): (String, Vec<String>) = if rest.is_empty() || first_is_flag {
-        (config::DEFAULT_PROFILE.to_string(), rest)
-    } else {
-        let mut iter = rest.into_iter();
-        let name = iter.next().expect("non-empty");
-        (name, iter.collect())
-    };
+    let (profile_name, passthrough) = split_profile_args(rest);
 
     let reg = config::load()?;
 
@@ -51,6 +43,23 @@ pub fn run(tokens: Vec<String>) -> Result<()> {
         adapter.name,
         profile_name
     );
+}
+
+/// Split the tokens that follow the tool name into `(profile_name, passthrough_args)`.
+///
+/// The first token is the profile name — *unless* it's missing or looks like a flag (`-x`), in which
+/// case the reserved [`config::DEFAULT_PROFILE`] is used and every token is forwarded as args. That's
+/// what lets both `hr claude` and `hr claude -p "…"` target the already-installed account, while
+/// `hr claude work -p "…"` still selects the `work` profile.
+fn split_profile_args(rest: Vec<String>) -> (String, Vec<String>) {
+    let first_is_flag = rest.first().is_some_and(|s| s.starts_with('-'));
+    if rest.is_empty() || first_is_flag {
+        (config::DEFAULT_PROFILE.to_string(), rest)
+    } else {
+        let mut iter = rest.into_iter();
+        let name = iter.next().expect("non-empty: checked above");
+        (name, iter.collect())
+    }
 }
 
 /// Launch a configured (OAuth/API) profile with full credential isolation.
@@ -383,4 +392,58 @@ fn valid_name(name: &str) -> bool {
         && name
             .chars()
             .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper: parse the post-tool tokens the way `run` does.
+    fn split(tokens: &[&str]) -> (String, Vec<String>) {
+        split_profile_args(tokens.iter().map(|s| s.to_string()).collect())
+    }
+
+    #[test]
+    fn bare_tool_targets_default_with_no_args() {
+        let (profile, args) = split(&[]);
+        assert_eq!(profile, config::DEFAULT_PROFILE);
+        assert!(args.is_empty());
+    }
+
+    #[test]
+    fn first_word_is_the_profile() {
+        let (profile, args) = split(&["work"]);
+        assert_eq!(profile, "work");
+        assert!(args.is_empty());
+    }
+
+    #[test]
+    fn named_profile_keeps_its_passthrough_args() {
+        let (profile, args) = split(&["work", "-p", "hi"]);
+        assert_eq!(profile, "work");
+        assert_eq!(args, vec!["-p", "hi"]);
+    }
+
+    #[test]
+    fn leading_flag_routes_to_default_and_forwards_every_token() {
+        // `hr claude -p hi` — the flag must not be mistaken for a profile name.
+        let (profile, args) = split(&["-p", "hi"]);
+        assert_eq!(profile, config::DEFAULT_PROFILE);
+        assert_eq!(args, vec!["-p", "hi"]);
+    }
+
+    #[test]
+    fn explicit_default_keyword_still_forwards_args() {
+        let (profile, args) = split(&["default", "-p", "hi"]);
+        assert_eq!(profile, config::DEFAULT_PROFILE);
+        assert_eq!(args, vec!["-p", "hi"]);
+    }
+
+    #[test]
+    fn double_dash_separator_counts_as_a_flag() {
+        // `--` (like `--help`) starts with '-', so it's passthrough for the default account.
+        let (profile, args) = split(&["--", "raw"]);
+        assert_eq!(profile, config::DEFAULT_PROFILE);
+        assert_eq!(args, vec!["--", "raw"]);
+    }
 }
