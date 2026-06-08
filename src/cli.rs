@@ -11,6 +11,7 @@ EXAMPLES:
   hr claude                          launch your default (already-installed) account
   hr add claude home                 register an OAuth profile (then log in)
   hr login claude home               run Claude's login into the 'home' profile
+  hr login codex home --device-auth  forward flags to the tool's login flow
   hr claude home                     launch Claude on the 'home' account
   hr claude work -p \"summarise\"       extra args pass straight through
   hr add claude glm --api \\
@@ -105,4 +106,8 @@ pub struct WhichArgs {
 pub struct LoginArgs {
     pub tool: String,
     pub profile: String,
+    /// Extra args forwarded to the tool's own login flow (e.g. `--device-auth` for a headless box).
+    /// Hyphen-flags are captured directly; `--` also works: `hr login codex home -- --device-auth`.
+    #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+    pub extra: Vec<String>,
 }
