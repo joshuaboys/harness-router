@@ -219,13 +219,26 @@ mod tests {
     }
 
     #[test]
-    fn antigravity_isolates_via_user_data_dir_arg() {
-        let ad = adapter::find("ag").unwrap(); // alias resolves
+    fn antigravity_isolates_via_home_redirect() {
+        let ad = adapter::find("agy").unwrap(); // alias resolves
+        assert_eq!(ad.binary, "agy");
         let inv = resolve(ad, &prof(Kind::Oauth), Path::new("/d"), None, &[], None);
-        let joined = inv.args.join(" ");
-        assert!(joined.contains("--user-data-dir"));
-        assert!(joined.contains("/d/antigravity"));
-        assert!(inv.ensure_dirs.iter().any(|d| d == "/d/antigravity"));
+        // agy hardcodes ~/.gemini, so isolation is a per-profile HOME — not a launch arg.
+        assert!(has_env(&inv, "HOME", "/d/home"));
+        assert!(inv.args.is_empty());
+        assert!(inv.ensure_dirs.iter().any(|d| d == "/d/home"));
+    }
+
+    #[test]
+    fn copilot_isolates_via_copilot_home_and_unsets_tokens() {
+        let ad = adapter::find("copilot").unwrap();
+        let inv = resolve(ad, &prof(Kind::Oauth), Path::new("/d"), None, &[], None);
+        assert!(has_env(&inv, "COPILOT_HOME", "/d/copilot"));
+        // Stray global GitHub tokens must not override an OAuth profile's logged-in account.
+        for var in ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"] {
+            assert!(inv.env_unset.iter().any(|k| k == var));
+        }
+        assert!(inv.ensure_dirs.iter().any(|d| d == "/d/copilot"));
     }
 
     #[test]

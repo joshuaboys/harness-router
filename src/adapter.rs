@@ -5,9 +5,11 @@
 //! set of credentials. Isolation is expressed in one of two ways:
 //!
 //! * **env-var dirs** — set an environment variable to a per-profile directory (e.g. Claude's
-//!   `CLAUDE_CONFIG_DIR`, Codex's `CODEX_HOME`, opencode's `XDG_*`).
-//! * **arg dirs** — pass a CLI flag pointing at a per-profile directory (e.g. an Antigravity /
-//!   VS Code style `--user-data-dir`).
+//!   `CLAUDE_CONFIG_DIR`, Codex's `CODEX_HOME`, Copilot's `COPILOT_HOME`, opencode's `XDG_*`). A
+//!   tool that hardcodes a `$HOME`-relative path with no relocation var (e.g. Antigravity's
+//!   `~/.gemini`) is isolated by redirecting `HOME` itself.
+//! * **arg dirs** — pass a CLI flag pointing at a per-profile directory (e.g. a VS Code-derived
+//!   IDE's `--user-data-dir`).
 //!
 //! Adding support for a new tool is just adding an entry to [`ADAPTERS`].
 
@@ -122,17 +124,40 @@ pub const ADAPTERS: &[Adapter] = &[
         experimental: false,
     },
     Adapter {
+        name: "copilot",
+        binary: "copilot",
+        aliases: &["gh-copilot"],
+        about: "GitHub Copilot CLI",
+        // COPILOT_HOME relocates the entire ~/.copilot tree: auth token, config, sessions and logs.
+        env_dirs: &[("COPILOT_HOME", "copilot")],
+        arg_dirs: &[],
+        // Copilot's "key" is a GitHub token; COPILOT_GITHUB_TOKEN has the highest precedence.
+        api_key_env: &["COPILOT_GITHUB_TOKEN"],
+        base_url_env: None,
+        // Login is the in-TUI `/login` slash command on first run — no standalone subcommand.
+        login_args: &[],
+        // Copilot prefers a token from the environment over its stored login, so clear any stray
+        // global tokens for OAuth profiles or they'd silently override the profile's account.
+        unset_for_oauth: &["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"],
+        experimental: false,
+    },
+    Adapter {
         name: "antigravity",
-        binary: "antigravity",
-        aliases: &["ag"],
-        about: "Google Antigravity (IDE) — Gemini's successor",
-        env_dirs: &[],
-        // VS Code-derived IDEs isolate all per-user state under --user-data-dir.
-        arg_dirs: &[("--user-data-dir", "antigravity")],
+        binary: "agy",
+        aliases: &["agy", "ag"],
+        about: "Google Antigravity CLI (agy) — Gemini CLI's successor",
+        // agy is a terminal agent (not a VS Code IDE) and hardcodes everything under ~/.gemini with
+        // no relocation env var, so the only way to isolate accounts is to redirect HOME itself.
+        env_dirs: &[("HOME", "home")],
+        arg_dirs: &[],
+        // agy dropped Gemini CLI's GEMINI_API_KEY support — OAuth (Google sign-in) is the only path.
         api_key_env: &[],
         base_url_env: None,
+        // Login is the browser-based Google sign-in triggered automatically on first run.
         login_args: &[],
         unset_for_oauth: &[],
+        // HOME-redirect isolates the Linux token file under ~/.gemini, but not the macOS Keychain
+        // entry ("Antigravity Safe Storage"); and the fake HOME hides ~/.gitconfig, ~/.ssh, etc.
         experimental: true,
     },
 ];
