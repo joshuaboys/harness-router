@@ -47,7 +47,10 @@ global "current account" to get out of sync, the account is chosen fresh, per co
 ## Install
 
 ```console
-# from crates.io
+# prebuilt binary (no Rust toolchain, no compile) — recommended
+cargo binstall harness-router
+
+# from crates.io (compiles from source)
 cargo install harness-router
 
 # from a clone
@@ -56,6 +59,13 @@ cargo install --path .
 # the binary is `hr`
 hr --help
 ```
+
+[`cargo binstall`](https://github.com/cargo-bins/cargo-binstall) downloads a prebuilt `hr` binary
+from the [GitHub Releases](https://github.com/joshuaboys/harness-router/releases) and falls back to
+`cargo install` if no binary matches your platform. Prebuilt binaries (with SHA-256 checksums) are
+attached to every release for Linux (`x86_64`, `aarch64`) and macOS (Intel, Apple Silicon); you can
+also download and unpack one manually. `cargo install` always works but recompiles `hr` and its
+dependencies from source.
 
 Requires the target CLIs (`claude`, `codex`, `opencode`, `copilot`, `agy`, …) to be installed and on
 your `PATH`.

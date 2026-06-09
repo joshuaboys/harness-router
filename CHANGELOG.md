@@ -4,6 +4,14 @@ All notable changes to `harness-router` are documented here.
 
 ## Unreleased
 
+## 0.2.1 - 2026-06-09
+
+### Added
+
+- Prebuilt `hr` binaries (with SHA-256 checksums) attached to every GitHub Release for Linux
+  (`x86_64`, `aarch64`) and macOS (Intel, Apple Silicon). `cargo binstall harness-router` now
+  installs without compiling from source.
+
 ## 0.2.0 - 2026-06-09
 
 ### Added
