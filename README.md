@@ -63,9 +63,9 @@ hr --help
 [`cargo binstall`](https://github.com/cargo-bins/cargo-binstall) downloads a prebuilt `hr` binary
 from the [GitHub Releases](https://github.com/joshuaboys/harness-router/releases) and falls back to
 `cargo install` if no binary matches your platform. Prebuilt binaries (with SHA-256 checksums) are
-attached to every release for Linux (`x86_64`, `aarch64`) and macOS (Intel, Apple Silicon); you can
-also download and unpack one manually. `cargo install` always works but recompiles `hr` and its
-dependencies from source.
+attached to every release for Linux (`x86_64`, `aarch64`), macOS (Intel, Apple Silicon), and Windows
+(`x86_64`); you can also download and unpack one manually. `cargo install` always works but
+recompiles `hr` and its dependencies from source.
 
 Requires the target CLIs (`claude`, `codex`, `opencode`, `copilot`, `agy`, …) to be installed and on
 your `PATH`.
@@ -150,6 +150,11 @@ Secrets are never written to the registry.
   var, `hr` isolates it by redirecting `HOME`. Two consequences: on macOS the OAuth token lives in
   the Keychain (shared, _not_ isolated), and inside an `agy` session the redirected `HOME` hides your
   real `~/.gitconfig`, `~/.ssh`, etc. Reliable account isolation is therefore Linux-only for now.
+- **Windows.** `hr` builds and runs on Windows, but with two differences from Unix: the launch
+  spawns the target CLI as a child process and forwards its exit code rather than performing a true
+  `exec` (so an `hr` process lingers for the tool's lifetime), and the `0600`/`0700` permission
+  hardening on the registry and per-profile key files is skipped (NTFS ACLs are not set). Profile
+  isolation via per-tool env vars works the same way.
 
 ## Roadmap
 
@@ -158,7 +163,6 @@ Secrets are never written to the registry.
 - User-defined custom tools (arbitrary binary + env mapping) from the registry.
 - Optional interactive picker (`hr` with no args) as a thin TUI layer.
 - An optional local API router for the "everything behind one endpoint" use case.
-- Windows support.
 
 ## License
 
