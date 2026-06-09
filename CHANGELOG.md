@@ -2,6 +2,20 @@
 
 All notable changes to `harness-router` are documented here.
 
+## Unreleased
+
+### Added
+
+- Built-in adapter for the GitHub Copilot CLI (`copilot`), isolating accounts via `COPILOT_HOME`
+  and clearing stray `COPILOT_GITHUB_TOKEN`/`GH_TOKEN`/`GITHUB_TOKEN` for OAuth profiles.
+
+### Fixed
+
+- Antigravity adapter now targets the real `agy` binary (was `antigravity`) and adds the `agy` alias.
+  `agy` is a terminal agent, not a VS Code IDE: the invalid `--user-data-dir` isolation is replaced
+  with a per-profile `HOME` redirect (the only option, as `agy` hardcodes `~/.gemini` with no
+  relocation env var). Remains experimental and Linux-only — see the README caveats.
+
 ## 0.1.0 - 2026-06-09
 
 Initial public release.
