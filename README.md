@@ -42,6 +42,9 @@ global "current account" to get out of sync — the account is chosen fresh, per
 ## Install
 
 ```console
+# from crates.io
+cargo install harness-router
+
 # from a clone
 cargo install --path .
 
