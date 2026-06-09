@@ -175,6 +175,12 @@ mod tests {
         inv.env_set.iter().any(|(k, v)| k == key && v == value)
     }
 
+    /// Build an isolated-dir value the same way `resolve` does, so assertions hold on any platform
+    /// (path separators differ between Unix and Windows).
+    fn joined(base: &str, sub: &str) -> String {
+        Path::new(base).join(sub).to_string_lossy().into_owned()
+    }
+
     #[test]
     fn claude_oauth_isolates_config_dir_and_unsets_keys() {
         let ad = adapter::find("claude").unwrap();
@@ -187,17 +193,11 @@ mod tests {
             None,
         );
         assert_eq!(inv.program, "claude");
-        assert!(has_env(
-            &inv,
-            "CLAUDE_CONFIG_DIR",
-            "/data/claude/home/claude"
-        ));
+        let want = joined("/data/claude/home", "claude");
+        assert!(has_env(&inv, "CLAUDE_CONFIG_DIR", &want));
         assert!(inv.env_unset.iter().any(|k| k == "ANTHROPIC_API_KEY"));
         assert_eq!(inv.args, vec!["--continue".to_string()]);
-        assert!(inv
-            .ensure_dirs
-            .iter()
-            .any(|d| d == "/data/claude/home/claude"));
+        assert!(inv.ensure_dirs.contains(&want));
     }
 
     #[test]
@@ -224,21 +224,23 @@ mod tests {
         assert_eq!(ad.binary, "agy");
         let inv = resolve(ad, &prof(Kind::Oauth), Path::new("/d"), None, &[], None);
         // agy hardcodes ~/.gemini, so isolation is a per-profile HOME — not a launch arg.
-        assert!(has_env(&inv, "HOME", "/d/home"));
+        let want = joined("/d", "home");
+        assert!(has_env(&inv, "HOME", &want));
         assert!(inv.args.is_empty());
-        assert!(inv.ensure_dirs.iter().any(|d| d == "/d/home"));
+        assert!(inv.ensure_dirs.contains(&want));
     }
 
     #[test]
     fn copilot_isolates_via_copilot_home_and_unsets_tokens() {
         let ad = adapter::find("copilot").unwrap();
         let inv = resolve(ad, &prof(Kind::Oauth), Path::new("/d"), None, &[], None);
-        assert!(has_env(&inv, "COPILOT_HOME", "/d/copilot"));
+        let want = joined("/d", "copilot");
+        assert!(has_env(&inv, "COPILOT_HOME", &want));
         // Stray global GitHub tokens must not override an OAuth profile's logged-in account.
         for var in ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN"] {
             assert!(inv.env_unset.iter().any(|k| k == var));
         }
-        assert!(inv.ensure_dirs.iter().any(|d| d == "/d/copilot"));
+        assert!(inv.ensure_dirs.contains(&want));
     }
 
     #[test]
@@ -304,6 +306,6 @@ mod tests {
             Some(&login),
         );
         assert_eq!(inv.args, vec!["login".to_string()]);
-        assert!(has_env(&inv, "CODEX_HOME", "/d/codex"));
+        assert!(has_env(&inv, "CODEX_HOME", &joined("/d", "codex")));
     }
 }
