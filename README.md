@@ -11,7 +11,7 @@ $ hr opencode oss
 ```
 
 No proxy. No daemon. No dashboard. Switching accounts for these tools is really just _"point the
-tool at the right credentials, then launch it"_ — so that's all `hr` does. It sets the right
+tool at the right credentials, then launch it"_ so that's all `hr` does. It sets the right
 environment for the profile you named and `exec`s the real CLI, with any extra arguments passed
 straight through.
 
@@ -33,11 +33,11 @@ The account that's **already installed** needs no profile at all: a bare `hr <to
 consistent front-door for every account, the default included. A leading flag is treated the same
 way, so `hr claude -p "…"` just runs your default account with those args. Register a profile named
 `default` to repoint the bare command at an isolated account instead. Not sure which account a
-command would land on? `hr which <tool> [profile]` prints exactly that — binary, env and isolated
-dirs — without launching anything (the API key is redacted).
+command would land on? `hr which <tool> [profile]` prints exactly that binary, env and isolated
+dirs, without launching anything (the API key is redacted).
 
 Switching is **ephemeral**: `hr claude work` affects only the process it launches. There is no
-global "current account" to get out of sync — the account is chosen fresh, per command.
+global "current account" to get out of sync, the account is chosen fresh, per command.
 
 ## Install
 
@@ -67,7 +67,7 @@ hr login claude home
 hr login claude work
 hr login codex home --device-auth            # flags after the profile pass to the login flow
 
-# 3. Use them — or skip all of the above and use your existing login:
+# 3. Use them or skip all of the above and use your existing login:
 hr claude                                    # your default, already-installed account
 hr claude home
 hr claude work -p "summarise CHANGES.md"     # extra args go straight to claude
@@ -143,6 +143,7 @@ Secrets are never written to the registry.
 - User-defined custom tools (arbitrary binary + env mapping) from the registry.
 - Optional interactive picker (`hr` with no args) as a thin TUI layer.
 - An optional local API router for the "everything behind one endpoint" use case.
+- Windows support.
 
 ## License
 
