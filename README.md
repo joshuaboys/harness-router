@@ -49,7 +49,8 @@ cargo install --path .
 hr --help
 ```
 
-Requires the target CLIs (`claude`, `codex`, `opencode`, …) to be installed and on your `PATH`.
+Requires the target CLIs (`claude`, `codex`, `opencode`, `copilot`, `agy`, …) to be installed and on
+your `PATH`.
 
 ## Quick start
 
@@ -98,7 +99,8 @@ echo "$MY_KEY" | hr add grok work --api --key -
 | **codex** (OpenAI Codex CLI)                             | `CODEX_HOME` per profile (relocates auth, config, sessions and logs).                                                                                                            |
 | **opencode**                                             | `XDG_DATA_HOME` + `XDG_CONFIG_HOME` per profile. API profiles require `--key-env` (provider-specific).                                                                           |
 | **grok** (xAI)                                           | API-key based: `XAI_API_KEY` / `GROK_API_KEY`.                                                                                                                                   |
-| **antigravity** (Google Antigravity, Gemini's successor) | **Experimental.** Isolates via a `--user-data-dir` launch arg; not yet verified on a real install.                                                                               |
+| **copilot** (GitHub Copilot CLI)                         | `COPILOT_HOME` per profile (relocates auth token, config, sessions and logs). OAuth profiles clear stray `COPILOT_GITHUB_TOKEN`/`GH_TOKEN`/`GITHUB_TOKEN` so the login wins. Token profiles set `COPILOT_GITHUB_TOKEN`. |
+| **antigravity** (`agy`, Gemini CLI's successor)          | **Experimental.** `agy` hardcodes `~/.gemini` with no relocation var, so isolation redirects `HOME` per profile. Reliable on Linux; macOS stores the token in the Keychain (not isolated). OAuth only — no API key. |
 
 Adding a tool is a single entry in [`src/adapter.rs`](src/adapter.rs).
 
@@ -126,7 +128,10 @@ Secrets are never written to the registry.
   `CLAUDE_CONFIG_DIR` does not relocate. OAuth-profile isolation for `claude` is therefore reliable
   on Linux; on macOS, _API_ profiles work everywhere, but separating two OAuth logins needs a
   Keychain-aware workaround (tracked for a future release). Codex/opencode are unaffected.
-- **Antigravity** is experimental — see the table above.
+- **Antigravity** is experimental. Because `agy` hardcodes `~/.gemini` and exposes no relocation env
+  var, `hr` isolates it by redirecting `HOME`. Two consequences: on macOS the OAuth token lives in
+  the Keychain (shared, _not_ isolated), and inside an `agy` session the redirected `HOME` hides your
+  real `~/.gitconfig`, `~/.ssh`, etc. Reliable account isolation is therefore Linux-only for now.
 
 ## Roadmap
 
