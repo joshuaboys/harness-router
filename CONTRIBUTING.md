@@ -49,6 +49,24 @@ Adding a built-in tool should usually be a small `Adapter` entry plus tests for 
 - Document user-visible caveats in `README.md`.
 - Avoid committing real profile data, API keys, OAuth tokens, or local config files.
 
+## Releasing
+
+Releases publish to [crates.io](https://crates.io/crates/harness-router) automatically from CI when a
+`v*` tag is pushed:
+
+1. Bump `version` in `Cargo.toml`, refresh `Cargo.lock` (`cargo build`), and move the `Unreleased`
+   CHANGELOG section to a dated `## <version> - <date>` heading.
+2. Merge that to `main`.
+3. Tag the merge commit and push it:
+
+   ```console
+   git tag -a v0.2.0 -m "v0.2.0"
+   git push origin v0.2.0
+   ```
+
+The `Release` workflow verifies the tag matches `Cargo.toml`, then runs `cargo publish` using the
+`CARGO_REGISTRY_TOKEN` repository secret (a crates.io API token with publish scope).
+
 ## Reporting Bugs
 
 Please include:
