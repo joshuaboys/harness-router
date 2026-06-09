@@ -67,7 +67,7 @@ pub const ADAPTERS: &[Adapter] = &[
         arg_dirs: &[],
         api_key_env: &["ANTHROPIC_API_KEY"],
         base_url_env: Some("ANTHROPIC_BASE_URL"),
-        login_args: &[],
+        login_args: &["auth", "login"],
         // API key / tokens take precedence over OAuth in Claude Code, so clear them for OAuth profiles.
         unset_for_oauth: &[
             "ANTHROPIC_API_KEY",
