@@ -198,11 +198,14 @@ fn add_oauth(adapter: &Adapter, profile: &str) -> Result<()> {
     println!("Added OAuth profile {}/{}.", adapter.name, profile);
     if adapter.login_args.is_empty() {
         println!(
-            "Log in:     hr {0} {1}   (complete {0}'s normal login the first time)",
+            "Log in:     hr {0} {1} [args…]   (login on first run; extra args pass to {0})",
             adapter.name, profile
         );
     } else {
-        println!("Log in:     hr login {} {}", adapter.name, profile);
+        println!(
+            "Log in:     hr login {0} {1} [args…]   (extra args pass to {0}'s login flow)",
+            adapter.name, profile
+        );
     }
     Ok(())
 }
@@ -572,6 +575,21 @@ mod tests {
         let ad = adapter::find("opencode").unwrap();
         let args = compose_login_args(ad.login_args, &[]);
         assert_eq!(args, vec!["auth", "login"]);
+    }
+
+    #[test]
+    fn claude_login_runs_auth_login_and_forwards_flags() {
+        // `hr login claude edda --console` -> `claude auth login --console`.
+        let ad = adapter::find("claude").unwrap();
+        assert_eq!(
+            compose_login_args(ad.login_args, &[]),
+            vec!["auth", "login"]
+        );
+        let extra = vec!["--console".to_string()];
+        assert_eq!(
+            compose_login_args(ad.login_args, &extra),
+            vec!["auth", "login", "--console"]
+        );
     }
 
     #[test]
