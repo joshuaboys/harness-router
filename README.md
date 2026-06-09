@@ -1,5 +1,10 @@
 # harness-router (`hr`)
 
+[![Crates.io](https://img.shields.io/crates/v/harness-router.svg)](https://crates.io/crates/harness-router)
+[![Downloads](https://img.shields.io/crates/d/harness-router.svg)](https://crates.io/crates/harness-router)
+[![CI](https://github.com/joshuaboys/harness-router/actions/workflows/ci.yml/badge.svg)](https://github.com/joshuaboys/harness-router/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/crates/l/harness-router.svg)](LICENSE)
+
 Add multiple OAuth/API accounts for your AI coding CLIs and switch between them with one command:
 
 ```console

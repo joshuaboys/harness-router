@@ -1,6 +1,6 @@
 [package]
 name = "harness-router"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Switch between multiple OAuth/API accounts for AI coding CLIs (Claude Code, Codex, opencode, grok, GitHub Copilot, Antigravity)"
 license = "MIT"
