@@ -4,6 +4,8 @@ All notable changes to `harness-router` are documented here.
 
 ## Unreleased
 
+## 0.2.0 - 2026-06-09
+
 ### Added
 
 - Built-in adapter for the GitHub Copilot CLI (`copilot`), isolating accounts via `COPILOT_HOME`
