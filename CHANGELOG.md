@@ -4,13 +4,31 @@ All notable changes to `harness-router` are documented here.
 
 ## Unreleased
 
-## 0.2.1 - 2026-06-09
+## 0.2.2 - 2026-06-09
 
 ### Added
 
+- Windows support (`x86_64`). `hr` now builds, tests, and ships a prebuilt binary on Windows. The
+  launch spawns the target CLI as a child and forwards its exit code (no true `exec`), and the
+  Unix permission hardening is skipped — see the README caveats.
 - Prebuilt `hr` binaries (with SHA-256 checksums) attached to every GitHub Release for Linux
-  (`x86_64`, `aarch64`) and macOS (Intel, Apple Silicon). `cargo binstall harness-router` now
-  installs without compiling from source.
+  (`x86_64`, `aarch64`), macOS (Intel, Apple Silicon), and Windows (`x86_64`).
+  `cargo binstall harness-router` now installs without compiling from source.
+
+### Changed
+
+- Upgraded `dirs` 5 → 6 and `toml` 0.8 → 1.
+- CI/release workflows now run on `actions/checkout@v5` (Node 24 runtime).
+
+### Fixed
+
+- Release workflow now creates the GitHub Release before uploading binaries, so the prebuilt
+  artifacts actually attach (the v0.2.1 binary jobs failed with "release not found").
+
+## 0.2.1 - 2026-06-09
+
+Published to crates.io; the prebuilt-binary upload failed (no GitHub Release existed to attach to),
+so no release assets were produced for this version. Fixed in 0.2.2.
 
 ## 0.2.0 - 2026-06-09
 
