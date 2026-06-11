@@ -1,0 +1,62 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="g" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#17171A" stroke-width="1"/>
+    </pattern>
+    <pattern id="scan" width="3" height="3" patternUnits="userSpaceOnUse">
+      <rect width="3" height="3" fill="none"/>
+      <rect width="3" height="1.5" fill="#000000" opacity="0.18"/>
+    </pattern>
+    <radialGradient id="vig" cx="50%" cy="42%" r="75%">
+      <stop offset="0%" stop-color="#100C09"/>
+      <stop offset="58%" stop-color="#0D0D0F"/>
+      <stop offset="100%" stop-color="#070708"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="url(#vig)"/>
+  <rect width="1280" height="640" fill="url(#grid)"/>
+
+  <!-- header -->
+  <text x="80" y="108" font-family="Departure Mono" font-size="62" fill="#CC5500" letter-spacing="-1" filter="url(#g)">hr.</text>
+  <text x="232" y="104" font-family="JetBrains Mono" font-size="30" fill="#EBEBEB" letter-spacing="1">harness-router</text>
+  <text x="1200" y="102" font-family="JetBrains Mono" font-size="23" fill="#85858A" text-anchor="end">// one front-door for every account</text>
+
+  <!-- terminal window -->
+  <rect x="80" y="150" width="1120" height="368" fill="#141416" stroke="#2A2A2E" stroke-width="1"/>
+  <rect x="80" y="150" width="1120" height="46" fill="#0F0F11" stroke="#2A2A2E" stroke-width="1"/>
+  <rect x="100" y="167" width="12" height="12" fill="#2A2A2E"/>
+  <rect x="120" y="167" width="12" height="12" fill="#2A2A2E"/>
+  <rect x="140" y="167" width="12" height="12" fill="#CC5500"/>
+  <text x="600" y="180" font-family="JetBrains Mono" font-size="20" fill="#85858A" text-anchor="middle" letter-spacing="2">~/work  —  hr</text>
+
+  <!-- terminal body -->
+  <g font-family="JetBrains Mono" font-size="27" xml:space="preserve">
+    <text x="118" y="252" fill="#CC5500">$ <tspan fill="#EBEBEB">hr claude</tspan></text>
+    <text x="470" y="252" fill="#85858A"># your default, already-installed login</text>
+
+    <text x="118" y="310" fill="#CC5500">$ <tspan fill="#EBEBEB">hr claude </tspan><tspan fill="#2E8B57">work</tspan></text>
+    <text x="470" y="310" fill="#85858A"># an isolated profile, side by side</text>
+
+    <text x="118" y="368" fill="#CC5500">$ <tspan fill="#EBEBEB">hr codex </tspan><tspan fill="#2E8B57">personal</tspan></text>
+
+    <text x="118" y="426" fill="#CC5500">$ <tspan fill="#EBEBEB">hr opencode </tspan><tspan fill="#2E8B57">oss</tspan></text>
+    <text x="470" y="426" fill="#85858A"># any anthropic/openai-compatible endpoint</text>
+
+    <text x="118" y="484" fill="#CC5500">$ </text>
+    <rect x="150" y="465" width="15" height="26" fill="#CC5500" filter="url(#g)"/>
+  </g>
+
+  <!-- concrete facts -->
+  <g font-family="JetBrains Mono" font-size="24" letter-spacing="3" xml:space="preserve">
+    <text x="80" y="588" fill="#85858A">NO PROXY <tspan fill="#CC5500">::</tspan> NO DAEMON <tspan fill="#CC5500">::</tspan> NO DASHBOARD <tspan fill="#CC5500">::</tspan> SINGLE BINARY</text>
+    <text x="1200" y="588" fill="#2E8B57" text-anchor="end">[ rust ]</text>
+  </g>
+
+  <rect width="1280" height="640" fill="url(#scan)"/>
+  <rect x="0.5" y="0.5" width="1279" height="639" fill="none" stroke="#2A2A2E" stroke-width="1"/>
+</svg>

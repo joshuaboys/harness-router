@@ -1,11 +1,21 @@
-# harness-router (`hr`)
+<div align="center">
+
+<h1>
+  <img src="assets/hr-logo.png" alt="harness-router" width="380">
+</h1>
+
+**Add multiple OAuth/API accounts to your AI coding CLIs
+and switch between them with one command.**
 
 [![Crates.io](https://img.shields.io/crates/v/harness-router.svg)](https://crates.io/crates/harness-router)
 [![Downloads](https://img.shields.io/crates/d/harness-router.svg)](https://crates.io/crates/harness-router)
 [![CI](https://github.com/joshuaboys/harness-router/actions/workflows/ci.yml/badge.svg)](https://github.com/joshuaboys/harness-router/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/crates/l/harness-router.svg)](LICENSE)
+[![Built with Rust](https://img.shields.io/badge/Built%20with-Rust-dea584?logo=rust)](https://www.rust-lang.org)
 
-Add multiple OAuth/API accounts for your AI coding CLIs and switch between them with one command:
+</div>
+
+---
 
 ```console
 $ hr claude               # your default, already-installed account (no setup)
@@ -16,33 +26,42 @@ $ hr opencode oss
 ```
 
 No proxy. No daemon. No dashboard. Switching accounts for these tools is really just _"point the
-tool at the right credentials, then launch it"_ so that's all `hr` does. It sets the right
+tool at the right credentials, then launch it"_ — so that's all `hr` does. It sets the right
 environment for the profile you named and `exec`s the real CLI, with any extra arguments passed
-straight through.
+straight through. This is the deliberately-small alternative to heavier "profile manager + proxy"
+tools.
 
-This is the deliberately-small alternative to heavier "profile manager + proxy" tools.
+## Features
 
-## How it works
+- **One front-door for every CLI** — `claude`, `codex`, `opencode`, `copilot`, `grok`, `antigravity`, and any compatible endpoint, all behind the same `hr <tool> <profile>` grammar.
+- **Accounts side by side** — isolated OAuth profiles never share login state, so two terminals can run two accounts at the same time.
+- **OAuth _or_ API** — log in once per profile, or point an API key + base URL at any Anthropic-/OpenAI-compatible endpoint (GLM, OpenRouter, Ollama, Kimi, …).
+- **Zero-setup default** — a bare `hr <tool>` launches your existing, already-installed login with no isolation and no config.
+- **Ephemeral switching** — every launch picks the account fresh; there is no global "current account" to drift out of sync.
+- **Inspect before you launch** — `hr which <tool> [profile]` prints the exact binary, env, and isolated dirs (API key redacted), without running anything.
+- **Single Rust binary** — `cargo binstall harness-router`, no runtime dependencies, no background process.
 
-Every supported CLI resolves its credentials from a directory or environment variable that `hr` can
-redirect per-launch. A **profile** is just one of two things:
+## Quick start
 
-- **OAuth profile** — an isolated config directory. Log in once into it (`hr login claude work`),
-  and it's reused forever. Two profiles never share login state, so you can run them side by side.
-- **API profile** — a set of environment variables (an API key, optionally a custom base URL). No
-  login step. This also covers any Anthropic-/OpenAI-compatible endpoint (GLM, OpenRouter, Ollama,
-  Kimi, …) by pointing the base URL at it.
+```console
+# 1. Register a profile (you'll be asked OAuth vs API, or pass --oauth / --api)
+hr add claude home --oauth
+hr add claude work --oauth
 
-The account that's **already installed** needs no profile at all: a bare `hr <tool>` (equivalently
-`hr <tool> default`) launches the tool with your existing login and *no* isolation — so you get one
-consistent front-door for every account, the default included. A leading flag is treated the same
-way, so `hr claude -p "…"` just runs your default account with those args. Register a profile named
-`default` to repoint the bare command at an isolated account instead. Not sure which account a
-command would land on? `hr which <tool> [profile]` prints exactly that binary, env and isolated
-dirs, without launching anything (the API key is redacted).
+# 2. Log in to each (runs the tool's own login inside that profile's isolated config)
+hr login claude home
+hr login claude work
+hr login codex home --device-auth            # flags after the profile pass to the login flow
 
-Switching is **ephemeral**: `hr claude work` affects only the process it launches. There is no
-global "current account" to get out of sync, the account is chosen fresh, per command.
+# 3. Use them — or skip all of the above and use your existing login:
+hr claude                                    # your default, already-installed account
+hr claude home
+hr claude work -p "summarise CHANGES.md"     # extra args go straight to claude
+
+# API / custom-endpoint profiles need no login:
+hr add claude glm --api --base-url https://open.bigmodel.cn/api/anthropic
+hr claude glm
+```
 
 ## Install
 
@@ -70,27 +89,27 @@ recompiles `hr` and its dependencies from source.
 Requires the target CLIs (`claude`, `codex`, `opencode`, `copilot`, `agy`, …) to be installed and on
 your `PATH`.
 
-## Quick start
+## How it works
 
-```console
-# 1. Register a profile (you'll be asked OAuth vs API, or pass --oauth / --api)
-hr add claude home --oauth
-hr add claude work --oauth
+Every supported CLI resolves its credentials from a directory or environment variable that `hr` can
+redirect per-launch. A **profile** is just one of two things:
 
-# 2. Log in to each (runs the tool's own login inside that profile's isolated config)
-hr login claude home
-hr login claude work
-hr login codex home --device-auth            # flags after the profile pass to the login flow
+- **OAuth profile** — an isolated config directory. Log in once into it (`hr login claude work`),
+  and it's reused forever. Two profiles never share login state, so you can run them side by side.
+- **API profile** — a set of environment variables (an API key, optionally a custom base URL). No
+  login step. This also covers any Anthropic-/OpenAI-compatible endpoint (GLM, OpenRouter, Ollama,
+  Kimi, …) by pointing the base URL at it.
 
-# 3. Use them or skip all of the above and use your existing login:
-hr claude                                    # your default, already-installed account
-hr claude home
-hr claude work -p "summarise CHANGES.md"     # extra args go straight to claude
+The account that's **already installed** needs no profile at all: a bare `hr <tool>` (equivalently
+`hr <tool> default`) launches the tool with your existing login and *no* isolation — so you get one
+consistent front-door for every account, the default included. A leading flag is treated the same
+way, so `hr claude -p "…"` just runs your default account with those args. Register a profile named
+`default` to repoint the bare command at an isolated account instead. Not sure which account a
+command would land on? `hr which <tool> [profile]` prints exactly that binary, env and isolated
+dirs, without launching anything (the API key is redacted).
 
-# API / custom-endpoint profiles need no login:
-hr add claude glm --api --base-url https://open.bigmodel.cn/api/anthropic
-hr claude glm
-```
+Switching is **ephemeral**: `hr claude work` affects only the process it launches. There is no
+global "current account" to get out of sync — the account is chosen fresh, per command.
 
 ## Commands
 
@@ -99,6 +118,7 @@ hr claude glm
 | `hr <tool> <profile> [args…]`      | Launch `<tool>` on `<profile>`, forwarding `args…`.                                 |
 | `hr add <tool> <profile>`          | Register a profile. `--oauth` or `--api` (with `--key`, `--base-url`, `--key-env`). |
 | `hr login <tool> <profile> [args…]` | Run the tool's own login flow inside an OAuth profile's isolated dir; `args…` forward to it (e.g. `--device-auth`). |
+| `hr which <tool> [profile]`        | Show which account a launch would use — binary, env and isolated dirs — without launching (API key redacted). |
 | `hr ls [tool]`                     | List configured tools and profiles.                                                 |
 | `hr rm <tool> <profile> [--purge]` | Remove a profile (`--purge` also deletes its stored credentials).                   |
 | `hr tools`                         | Show the built-in tool adapters and how each isolates accounts.                     |
@@ -167,3 +187,4 @@ Secrets are never written to the registry.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+</content>
