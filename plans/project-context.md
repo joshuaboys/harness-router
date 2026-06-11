@@ -46,6 +46,22 @@ Windows.
   invocation.
 - Releases: bump `Cargo.toml` version, refresh `Cargo.lock`, date the
   CHANGELOG section, merge to `main`, push a `v*` tag — CI does the rest.
+- Planning follows APS (see [`plans/aps-rules.md`](./aps-rules.md)): specs
+  describe intent, work items authorise execution, actions are lean observable
+  checkpoints. Designs go in `plans/designs/`, ADRs in `plans/decisions/`,
+  dev-time discoveries in `plans/issues.md` (ISS-NNN / Q-NNN).
+
+## APS Setup
+
+Local agent/tool config (`.agents/`, `.aps/`, `.claude/`, `.codex/`,
+`.gemini/`, `.opencode/`, `.envrc`, `.github/agents/`) is gitignored, so each
+machine needs the APS install plus these post-install steps:
+
+- **Codex**: merge `.codex/agents/codex-config-snippet.toml` into
+  `.codex/config.toml`, then run
+  `codex skills install .agents/skills/aps-planning`.
+- **Gemini**: run `gemini skills link . --scope workspace`.
+- **aps**: install configuration lives in `.aps/config.yml`.
 
 ## Active Decisions
 
