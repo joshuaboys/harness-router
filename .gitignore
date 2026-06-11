@@ -1,1 +1,11 @@
 /target
+
+# local agent/tool config
+/.agents/
+/.aps/
+/.claude/
+/.codex/
+/.envrc
+/.gemini/
+/.github/agents/
+/.opencode/
