@@ -35,7 +35,7 @@ item_metadata() {
 status() {
   echo "=== hr keychain probe: $(sw_vers -productVersion 2>/dev/null || echo 'not macOS') ==="
   echo "claude version: $(claude --version 2>/dev/null || echo 'claude not found')"
-  echo "user: $USER"
+  echo "user: ${USER:-$(id -un 2>/dev/null || echo unknown)}"
   for svc in "${SERVICES[@]}"; do
     item_metadata "$svc"
   done
@@ -66,11 +66,15 @@ seed_bogus() {
 }
 EOF
   chmod 600 "$dir/.credentials.json"
+  # %q quotes the path so the printed commands stay safe to copy/paste even
+  # when <dir> contains spaces or shell metacharacters.
+  local qdir
+  printf -v qdir '%q' "$dir"
   echo "Wrote bogus credentials file to $dir/.credentials.json"
-  echo "Now run: CLAUDE_CONFIG_DIR=$dir claude -p \"reply OK\""
+  echo "Now run: CLAUDE_CONFIG_DIR=$qdir claude -p \"reply OK\""
   echo "  replies OK        -> Keychain took precedence (file ignored)"
   echo "  auth/401 error    -> file took precedence"
-  echo "Afterwards delete the directory: rm -rf $dir"
+  echo "Afterwards delete the directory: rm -rf $qdir"
 }
 
 case "${1:-}" in
