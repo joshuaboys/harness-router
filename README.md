@@ -187,3 +187,4 @@ Secrets are never written to the registry.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+</content>
