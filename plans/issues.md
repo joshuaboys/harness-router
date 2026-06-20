@@ -27,7 +27,41 @@ Example:
 **Impact:** Will need retry logic or batching for bulk operations.
 -->
 
-_(No issues yet)_
+### ISS-001: Claude Code never uses its OAuth refresh token (upstream)
+
+| Field | Value |
+|-------|-------|
+| Status | Open |
+| Severity | Medium |
+| Discovered | KEYCHN-001 |
+| Module | KEYCHN |
+
+**Context:** Community-reported upstream bug (anthropics/claude-code #31095,
+#12447): Claude Code stores access + refresh tokens but never refreshes;
+sessions 401 after ~1–8 h and force a re-`/login`, which rewrites the macOS
+Keychain item.
+
+**Impact:** Good news for snapshot-style isolation (no silent mid-session
+write-back), bad news for long sessions on any platform. Re-login is the one
+event that mutates the Keychain mid-session — any swap-style strategy must
+capture after exit, not only before launch. If upstream fixes refresh, P2
+assumptions need re-checking.
+
+### ISS-002: Keychain service-name mismatch in some Claude Code versions (upstream)
+
+| Field | Value |
+|-------|-------|
+| Status | Open |
+| Severity | Low |
+| Discovered | KEYCHN-001 |
+| Module | KEYCHN |
+
+**Context:** anthropics/claude-code #9403 reports the login path writing
+service `"Claude Code-credentials"` while the read path looks up
+`"Claude Code"` in some versions.
+
+**Impact:** Any strategy that manipulates the item by service name (design
+option C) inherits this fragility; the probe checks both names.
 
 ---
 
@@ -56,7 +90,23 @@ Example:
 2. Transport layer — centralized, but may hide failures
 -->
 
-_(No questions yet)_
+### Q-001: Does .credentials.json take precedence over the Keychain on macOS?
+
+| Field | Value |
+|-------|-------|
+| Status | Open |
+| Priority | High |
+| Discovered | KEYCHN-001 |
+| Assigned | macOS tester (probe step P4) |
+
+**Context:** Claude Code reads `<config-dir>/.credentials.json` on macOS when
+the Keychain is unavailable (community-reported, SSH scenarios). Unknown:
+which source wins when both exist. Decides whether design option B
+(per-profile seeded credentials file — full Linux parity) is viable.
+
+**Options considered:**
+1. Keychain wins → option B dead, option A (setup-token) stands
+2. File wins → option B becomes a serious contender; re-open design
 
 ---
 
