@@ -64,8 +64,10 @@ Change status to **Ready** when:
 ## Work Items
 
 > KEYCHN-001 complete (design accepted). KEYCHN-002 is **Ready** but gated on
-> its entry criterion (design P3 confirmed on a real Mac). KEYCHN-003 stays
-> Draft until KEYCHN-002 lands.
+> its entry criterion (design P3 confirmed on a real Mac) — the entry-criteria
+> **probe is now In Progress** (action plan:
+> [../execution/KEYCHN.actions.md](../execution/KEYCHN.actions.md)), awaiting a
+> macOS run. KEYCHN-003 stays Draft until KEYCHN-002 lands.
 
 ### KEYCHN-001: Spike — characterise macOS credential storage, select strategy
 
@@ -145,4 +147,4 @@ Change status to **Ready** when:
 ## Execution _(optional)_
 
 Action Plan: [../execution/KEYCHN.actions.md](../execution/KEYCHN.actions.md)
-_(create when KEYCHN-002 goes Ready, if needed)_
+_(In Progress — entry-criteria probe P1–P4, awaiting a macOS run.)_
