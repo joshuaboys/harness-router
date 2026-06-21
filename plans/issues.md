@@ -6,27 +6,6 @@
 
 ## Issues
 
-<!--
-Issues are problems discovered during development.
-ID format: ISS-NNN (e.g., ISS-001)
-Status: Open | Resolved | Deferred | Won't Fix
-Severity: Critical | High | Medium | Low
-
-Example:
-### ISS-001: API rate limits lower than expected
-
-| Field | Value |
-|-------|-------|
-| Status | Open |
-| Severity | Medium |
-| Discovered | AUTH-002 |
-| Module | AUTH |
-
-**Context:** During load testing, discovered the API rate-limits at 100 req/min, not 1000 as documented.
-
-**Impact:** Will need retry logic or batching for bulk operations.
--->
-
 ### ISS-001: Claude Code never uses its OAuth refresh token (upstream)
 
 | Field | Value |
@@ -67,29 +46,6 @@ option C) inherits this fragility; the probe checks both names.
 
 ## Questions
 
-<!--
-Questions are unknowns that emerged during development.
-ID format: Q-NNN (e.g., Q-001)
-Status: Open | Answered | Deferred
-Priority: High | Medium | Low
-
-Example:
-### Q-001: Should retry logic live in the client or transport layer?
-
-| Field | Value |
-|-------|-------|
-| Status | Open |
-| Priority | Medium |
-| Discovered | AUTH-002 |
-| Assigned | @username |
-
-**Context:** Found we need retry logic for rate limits. Unclear where this belongs architecturally.
-
-**Options considered:**
-1. Client layer — simpler, but each client reimplements
-2. Transport layer — centralized, but may hide failures
--->
-
 ### Q-001: Does .credentials.json take precedence over the Keychain on macOS?
 
 | Field | Value |
@@ -111,11 +67,6 @@ which source wins when both exist. Decides whether design option B
 ---
 
 ## Resolved
-
-<!--
-Move resolved issues and answered questions here.
-Keep for 1-2 sprints as reference, then archive or delete.
--->
 
 _(Nothing resolved yet)_
 

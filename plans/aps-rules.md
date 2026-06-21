@@ -25,10 +25,10 @@ Actions translate work item intent into **observable checkpoints**. They are NOT
 ### Format
 
 ```markdown
-### 1. [Action verb] [target]
+### 1. Add macOS launch warning
 
-- **Checkpoint:** [Observable state — max 12 words]
-- **Validate:** `[command]` (optional)
+- **Checkpoint:** Warning appears for unsupported macOS OAuth launches
+- **Validate:** `cargo test --verbose`
 ```
 
 ### What Goes WHERE
@@ -144,10 +144,7 @@ Name module files with a numeric prefix based on dependency order:
 
 ```text
 modules/
-├── 01-core.aps.md      # Foundation, no dependencies
-├── 02-auth.aps.md      # Depends on core
-├── 03-payments.aps.md  # Depends on auth
-└── 04-ui.aps.md        # Depends on all above
+└── 01-claude-macos-keychain.aps.md
 ```
 
 - Use zero-padded numbers (`01-`, `02-`, not `1-`, `2-`)
@@ -156,14 +153,14 @@ modules/
 
 ### Work Item IDs
 
-Work items use the module's ID prefix: `AUTH-001`, `AUTH-002`, `CORE-001`, etc.
+Work items use the module's ID prefix, such as `KEYCHN-001`.
 
 ## Creating APS Documents
 
 ### When Asked to Plan
 
 1. Read existing `plans/index.aps.md` if present
-2. Identify which template fits (index, module, simple)
+2. Identify which document shape fits (index, module, or action plan)
 3. Fill sections with **intent**, not implementation
 4. Mark assumptions explicitly
 5. Leave work items empty until module is Ready
@@ -185,15 +182,13 @@ plans/
 ├── index.aps.md           # Root plan
 ├── issues.md              # Development-time discoveries
 ├── modules/               # Module specs (numbered by dependency order)
-│   ├── 01-core.aps.md
-│   └── 02-auth.aps.md
+│   └── 01-claude-macos-keychain.aps.md
 ├── execution/                 # Action plans
-│   ├── [WORK-ITEM-ID].actions.md  # Per-work-item (complex projects)
-│   └── [MODULE].actions.md        # Per-module (simple projects)
+│   └── KEYCHN.actions.md          # Per-module action plan when needed
 ├── decisions/             # ADRs (optional)
-│   └── [NNN]-[title].md
+│   └── 001-record-format.md
 └── designs/               # Technical designs (optional)
-    └── YYYY-MM-DD-slug.design.md
+    └── 2026-06-11-claude-macos-keychain.design.md
 ```
 
 ## Design Documents
@@ -216,7 +211,8 @@ Design docs live in `plans/designs/`. They capture architectural thinking
 
 ### Naming
 
-`plans/designs/YYYY-MM-DD-slug.design.md` — date-prefixed, descriptive slug.
+Use a date-prefixed, descriptive slug, such as
+`plans/designs/2026-06-11-claude-macos-keychain.design.md`.
 
 ### Linking
 
@@ -225,7 +221,7 @@ Reference designs from the Index or Module metadata:
 ```markdown
 ## Designs
 
-- [Auth Architecture](designs/2025-01-05-auth-architecture.design.md)
+- [Claude OAuth isolation on macOS](designs/2026-06-11-claude-macos-keychain.design.md)
 ```
 
 ### Accept-Then-Normalise
@@ -237,40 +233,6 @@ If a design doc already exists in free-form (created by another agent or human),
 2. Don't rewrite the author's content — append missing sections or infer from
    existing content
 3. This normalisation can happen in the background, after the main work
-
-## Monorepo Conventions
-
-For repositories with multiple packages/apps. See `docs/monorepo.md` for full guidance.
-
-### Package Tagging
-
-Every module declares `Packages: pkg1, pkg2` in metadata. Work items inherit or narrow the package scope.
-
-### Session Start Ritual
-
-Before touching code:
-
-1. **Orient** — Read `plans/index.aps.md` "What's Next" section, then relevant module(s)
-2. **Confirm authority** — Work item exists, status = Ready, packages are clear
-3. **Declare intent** — State: "Executing AUTH-002 (core, api): [description]"
-
-If no Ready work item exists:
-
-- Create Draft work item first
-- Ask human to mark Ready before proceeding
-- OR if trivial fix, note in session end summary
-
-### Session End Ritual
-
-After completing work:
-
-1. **Update status** — Mark work items: `In Progress`, `Complete: YYYY-MM-DD`, or `Blocked: [reason]`
-2. **Capture discovered work** — Add as Draft items with package tags
-3. **Log discoveries** — Add issues (ISS-NNN) or questions (Q-NNN) to `plans/issues.md`
-4. **Update "What's Next"** — Remove completed, add new Ready items, re-sequence if needed
-5. **Session summary** — Brief note: what completed, what discovered, what's next
-
-**Key principle:** The next agent should pick up exactly where you left off without archaeology.
 
 ## Issues & Questions Tracker
 

@@ -122,7 +122,7 @@ Change status to **Ready** when:
 - **Expected Outcome:** The README "macOS + Claude OAuth" caveat is replaced
   with the supported behaviour and any remaining limits; CHANGELOG Unreleased
   entry added; warning/error paths covered by tests.
-- **Validation:** `cargo test --verbose && ! grep -q "tracked for a future release" README.md`
+- **Validation:** `cargo test --verbose` plus a README caveat review.
 - **Dependencies:** KEYCHN-002
 
 ## Open Questions

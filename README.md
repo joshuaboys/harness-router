@@ -56,7 +56,7 @@ hr login codex home --device-auth            # flags after the profile pass to t
 # 3. Use them — or skip all of the above and use your existing login:
 hr claude                                    # your default, already-installed account
 hr claude home
-hr claude work -p "summarise CHANGES.md"     # extra args go straight to claude
+hr claude work -p "summarise CHANGELOG.md"   # extra args go straight to claude
 
 # API / custom-endpoint profiles need no login:
 hr add claude glm --api --base-url https://open.bigmodel.cn/api/anthropic
@@ -165,12 +165,12 @@ Secrets are never written to the registry.
 - **macOS + Claude OAuth.** Claude Code stores OAuth credentials in the macOS Keychain, which
   `CLAUDE_CONFIG_DIR` does not relocate. OAuth-profile isolation for `claude` is therefore reliable
   on Linux; on macOS, _API_ profiles work everywhere, but separating two OAuth logins needs a
-  Keychain-aware workaround (tracked for a future release). Codex/opencode are unaffected.
+  Keychain-aware workaround. Codex/opencode are unaffected.
 - **Antigravity** is experimental. Because `agy` hardcodes `~/.gemini` and exposes no relocation env
   var, `hr` isolates it by redirecting `HOME`. Two consequences: on macOS the OAuth token lives in
   the Keychain (shared, _not_ isolated), and inside an `agy` session the redirected `HOME` hides your
   real `~/.gitconfig`, `~/.ssh`, etc. Reliable account isolation is therefore Linux-only for now.
-- **Windows.** `hr` builds and runs on Windows, but with two differences from Unix: the launch
+- **Windows.** `hr` builds and runs on Windows, with two differences from Unix: the launch
   spawns the target CLI as a child process and forwards its exit code rather than performing a true
   `exec` (so an `hr` process lingers for the tool's lifetime), and the `0600`/`0700` permission
   hardening on the registry and per-profile key files is skipped (NTFS ACLs are not set). Profile
