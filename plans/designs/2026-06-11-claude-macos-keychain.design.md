@@ -190,7 +190,7 @@ script output blocks back into the GitHub issue.
 >
 > `hr` isolates Claude Code OAuth profiles per config dir, which works on
 > Linux/Windows but not macOS, where credentials live in the Keychain
-> (README "Known limitations"). We have a candidate design; it needs five
+> (README "Caveats"). We have a candidate design; it needs five
 > observations from a real Mac that we can't make in CI.
 >
 > If you have a Mac, Claude Code, and a Claude subscription: run the checklist

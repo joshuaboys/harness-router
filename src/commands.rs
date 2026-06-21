@@ -7,7 +7,7 @@ use crate::cli::{AddArgs, ListArgs, LoginArgs, RemoveArgs, WhichArgs};
 use crate::config::{self, Kind, Profile};
 use crate::invoke::{self, Invocation};
 
-/// Placeholder substituted for the real API key when *describing* a launch (`hr which`), so the
+/// Redacted value substituted for the real API key when *describing* a launch (`hr which`), so the
 /// secret is never read from disk or printed.
 const REDACTED_KEY: &str = "<hidden>";
 
@@ -611,7 +611,7 @@ mod tests {
             key_env: Vec::new(),
             env: BTreeMap::new(),
         };
-        // `which` resolves with the placeholder — the real secret is never in play.
+        // `which` resolves with a redacted value — the real secret is never in play.
         let inv = invoke::resolve(ad, &profile, Path::new("/d"), Some(REDACTED_KEY), &[], None);
         let out = format_plan("claude/glm", "api", &inv);
 
