@@ -72,6 +72,14 @@ pub fn resolve(
                 } else {
                     profile.key_env.clone()
                 };
+                // Clear any *other* credential var this tool honours, so a stray global one can't
+                // shadow the var this profile actually sets (mirrors the OAuth path). `unset_for_oauth`
+                // is the canonical full credential set for the tool; we keep the ones we're setting.
+                for var in adapter.unset_for_oauth {
+                    if !names.iter().any(|n| n == var) {
+                        env_unset.push((*var).to_string());
+                    }
+                }
                 for name in names {
                     env_set.push((name, key.to_string()));
                 }
@@ -214,8 +222,28 @@ mod tests {
         ));
         // Dir isolation still applies for API profiles.
         assert!(inv.env_set.iter().any(|(k, _)| k == "CLAUDE_CONFIG_DIR"));
-        // API profiles must not clear the very key they depend on.
-        assert!(inv.env_unset.is_empty());
+        // The profile sets ANTHROPIC_API_KEY, so that var is never unset…
+        assert!(!inv.env_unset.iter().any(|k| k == "ANTHROPIC_API_KEY"));
+        // …but the *other* credential vars are cleared so a stray global one can't shadow it.
+        assert!(inv.env_unset.iter().any(|k| k == "ANTHROPIC_AUTH_TOKEN"));
+        assert!(inv.env_unset.iter().any(|k| k == "CLAUDE_CODE_OAUTH_TOKEN"));
+    }
+
+    #[test]
+    fn claude_api_bearer_token_override_sets_and_clears_the_right_vars() {
+        // OpenRouter/DeepSeek-style endpoints want the key as ANTHROPIC_AUTH_TOKEN (Bearer), not the
+        // default x-api-key var. The override must set that var and clear the ones it isn't using.
+        let ad = adapter::find("claude").unwrap();
+        let mut p = prof(Kind::Api);
+        p.base_url = Some("https://openrouter.ai/api/v1".to_string());
+        p.key_env = vec!["ANTHROPIC_AUTH_TOKEN".to_string()];
+        let inv = resolve(ad, &p, Path::new("/d"), Some("sk-or"), &[], None);
+        assert!(has_env(&inv, "ANTHROPIC_AUTH_TOKEN", "sk-or"));
+        // The var we set is never cleared…
+        assert!(!inv.env_unset.iter().any(|k| k == "ANTHROPIC_AUTH_TOKEN"));
+        // …and a stray global ANTHROPIC_API_KEY can't shadow the Bearer token.
+        assert!(inv.env_unset.iter().any(|k| k == "ANTHROPIC_API_KEY"));
+        assert!(inv.env_unset.iter().any(|k| k == "CLAUDE_CODE_OAUTH_TOKEN"));
     }
 
     #[test]
