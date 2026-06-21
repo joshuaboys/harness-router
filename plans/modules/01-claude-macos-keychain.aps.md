@@ -4,6 +4,8 @@
 | ------ | ----------- | ----------- |
 | KEYCHN | @joshuaboys | In Progress |
 
+**Last reviewed:** 2026-06-21
+
 ## Purpose
 
 On macOS, Claude Code stores OAuth credentials in the Keychain, which
