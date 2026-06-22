@@ -133,7 +133,7 @@ echo "$MY_KEY" | hr add grok work --api --key -
 
 | Tool                                                     | Account isolation                                                                                                                                                                |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **claude** (Claude Code)                                 | `CLAUDE_CONFIG_DIR` per profile; API profiles set `ANTHROPIC_API_KEY` (+ `ANTHROPIC_BASE_URL`). OAuth profiles clear stray `ANTHROPIC_API_KEY`/`*_AUTH_TOKEN` so the login wins. |
+| **claude** (Claude Code)                                 | `CLAUDE_CONFIG_DIR` per profile; API profiles set `ANTHROPIC_API_KEY` (+ `ANTHROPIC_BASE_URL`), or `--key-env ANTHROPIC_AUTH_TOKEN` for Bearer-token endpoints (OpenRouter, DeepSeek). Both OAuth and API profiles clear the credential vars they don't set, so a stray global key never shadows the profile. |
 | **codex** (OpenAI Codex CLI)                             | `CODEX_HOME` per profile (relocates auth, config, sessions and logs).                                                                                                            |
 | **opencode**                                             | `XDG_DATA_HOME` + `XDG_CONFIG_HOME` per profile. API profiles require `--key-env` (provider-specific).                                                                           |
 | **grok** (xAI)                                           | API-key based: `XAI_API_KEY` / `GROK_API_KEY`.                                                                                                                                   |
@@ -149,8 +149,14 @@ works as a `codex`/`opencode` API profile. Examples:
 
 ```console
 hr add claude glm  --api --base-url https://open.bigmodel.cn/api/anthropic
+# Bearer-token endpoints (OpenRouter, DeepSeek, …) want the key as ANTHROPIC_AUTH_TOKEN,
+# not the default x-api-key header — override the env var the key is exported as:
+hr add claude or   --api --base-url https://openrouter.ai/api/v1 --key-env ANTHROPIC_AUTH_TOKEN
 hr add opencode or --api --key-env OPENAI_API_KEY        # OpenRouter etc.
 ```
+
+`ANTHROPIC_API_KEY` is sent as the `x-api-key` header; `ANTHROPIC_AUTH_TOKEN` is sent as
+`Authorization: Bearer …`. Pick whichever your endpoint expects with `--key-env`.
 
 ## Where things live
 
