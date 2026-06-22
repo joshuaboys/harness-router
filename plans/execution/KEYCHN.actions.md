@@ -20,6 +20,10 @@ accepted Option A; P1/P2/P4 de-risk the Option C fallback. Run via the Appendix 
 checklist; the probe script inspects item *metadata* only — it never reads or
 prints token values.
 
+A self-contained, hand-off-ready version of these steps for an external macOS
+tester lives in [KEYCHN-probe-runbook.md](./KEYCHN-probe-runbook.md) (single-file
+`curl`, no clone needed); its results table maps 1:1 onto the Results table below.
+
 ## Actions
 
 ### Action 1 — Capture baseline + login-write metadata (P1)
