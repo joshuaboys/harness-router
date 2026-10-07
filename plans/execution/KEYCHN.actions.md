@@ -83,10 +83,12 @@ Keychain `mdat` unchanged after a `CLAUDE_CODE_OAUTH_TOKEN` session.
 
 > Paste probe output blocks here as steps complete. Record only metadata
 > (service/account names, `cdat`/`mdat`, mode) — never token values.
+>
+> **Tester env:** macOS 26.2, Claude Code 2.1.185 (tester @benjaminszymkow), 2026-06-22.
 
 | Probe | Claim | Result | Evidence | Date |
 | ----- | ----- | ------ | -------- | ---- |
-| P1 | Keychain item service/account names as reported | _pending_ | | |
+| P1 | Keychain item service/account names as reported; `/login` writes it | PASS | `svce`/`acct` = `"Claude Code-credentials"`/username; `/login` advanced `mdat` 13:13:06Z→13:41:24Z, `cdat` stable (in-place update); no `.credentials.json` on disk | 2026-06-22 |
 | P2 | No mid-session write-back (refresh unused) | _pending_ | | |
 | P3 | `CLAUDE_CODE_OAUTH_TOKEN` session touches Keychain not at all | _pending_ | | |
 | P4 | File-vs-Keychain precedence when both exist | _pending_ | | |
